@@ -3,44 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elite Predictor Pro</title>
+    <title>ProPredict | Dashboard</title>
     <style>
-        :root { --primary: #0f172a; --accent: #0ea5e9; --bg: #f1f5f9; --win: #10b981; --loss: #ef4444; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; }
-        header { background: var(--primary); color: white; padding: 1rem; text-align: center; position: relative; }
-        .container { max-width: 850px; margin: auto; padding: 15px; }
+        :root { --primary: #0f172a; --accent: #0ea5e9; --bg: #f1f5f9; --win: #10b981; --loss: #ef4444; --card: #ffffff; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; color: #1e293b; }
+        header { background: var(--primary); color: white; padding: 1.2rem; text-align: center; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .container { max-width: 800px; margin: auto; padding: 15px; }
+
+        /* Stylish Admin Panel */
+        #admin-panel { display: none; background: white; border-radius: 16px; padding: 25px; margin-bottom: 30px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+        .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        input, select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; }
+        .btn-full { grid-column: span 2; background: var(--primary); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 10px; }
         
-        /* Admin UI */
-        #admin-ui { display: none; background: white; padding: 20px; border: 2px solid var(--accent); border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .search-box { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;}
-        .api-fixture { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+        /* API Section */
+        .api-section { border-bottom: 2px dashed #e2e8f0; padding-bottom: 20px; margin-bottom: 20px; }
+        .api-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8fafc; border-radius: 8px; margin-top: 10px; font-size: 0.85rem; }
+
+        /* User View */
+        .date-nav { display: flex; gap: 8px; margin-bottom: 20px; background: #e2e8f0; padding: 6px; border-radius: 12px; }
+        .date-nav button { flex: 1; padding: 12px; border: none; border-radius: 8px; background: none; font-weight: 700; cursor: pointer; color: #64748b; transition: 0.3s; }
+        .date-nav button.active { background: white; color: var(--primary); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+
+        .match-card { background: var(--card); padding: 18px; border-radius: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 6px solid var(--primary); }
+        .badge { padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; color: white; margin-left: 4px; }
+        .b-1x2 { background: var(--primary); } .b-dc { background: #64748b; }
         
-        /* User UI */
-        .date-nav { display: flex; background: white; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 10; }
-        .date-nav button { flex: 1; padding: 15px; border: none; background: none; font-weight: 700; cursor: pointer; color: #64748b; }
-        .date-nav button.active { border-bottom: 3px solid var(--accent); color: var(--primary); }
-        .match-card { background: white; padding: 16px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 5px solid var(--primary); }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; color: white; margin-left: 5px; }
-        .b-win { background: var(--primary); } .b-dc { background: #64748b; }
-        button.action { padding: 6px 12px; border-radius: 6px; cursor: pointer; border: 1px solid #cbd5e1; }
+        .admin-controls { margin-top: 12px; padding-top: 10px; border-top: 1px solid #f1f5f9; display: flex; gap: 8px; }
+        .btn-s { padding: 6px 12px; border-radius: 6px; cursor: pointer; border: 1px solid #cbd5e1; font-size: 0.75rem; font-weight: 600; }
+        .btn-win { color: var(--win); border-color: var(--win); }
+        .btn-loss { color: var(--loss); border-color: var(--loss); }
+        .btn-del { color: #64748b; background: #fee2e2; border: none; }
     </style>
 </head>
 <body>
 
 <header>
-    <h2 style="margin:0">PREDICT PRO</h2>
-    <button onclick="window.unlockAdmin()" style="position:absolute; right:10px; top:15px;">Admin</button>
+    <h2 style="margin:0; letter-spacing: 1px;">PREDICT PRO</h2>
+    <button onclick="window.unlockAdmin()" style="position:absolute; right:15px; top:20px; background:rgba(255,255,255,0.2); border:none; color:white; padding:5px 12px; border-radius:6px; cursor:pointer;">Admin</button>
 </header>
 
 <div class="container">
-    <div id="admin-ui">
-        <h3>Admin Panel</h3>
-        <input type="date" id="fetch-date">
-        <button onclick="window.fetchFromAPI()" style="background:var(--primary); color:white; padding:10px; border:none; width:100%; border-radius:6px;">Fetch Today's Games</button>
-        
-        <input type="text" id="api-search" class="search-box" placeholder="Search team (e.g. Arsenal)..." onkeyup="window.filterAPILis()">
-        
-        <div id="api-list" style="max-height:300px; overflow-y:auto; border:1px solid #eee; margin-top:10px;"></div>
+    <div id="admin-panel">
+        <div class="api-section">
+            <h3 style="margin-top:0">1. Auto-Fetch (Top Leagues)</h3>
+            <div style="display:flex; gap:10px;">
+                <input type="date" id="api-date" style="flex:2">
+                <button onclick="window.fetchAPI()" class="btn-full" style="flex:1; margin:0">Load API</button>
+            </div>
+            <div id="api-results"></div>
+        </div>
+
+        <div>
+            <h3>2. Manual Entry (Any League)</h3>
+            <div class="admin-grid">
+                <div class="input-group">
+                    <label>Home Team</label>
+                    <input type="text" id="m-home" placeholder="e.g. Gor Mahia">
+                </div>
+                <div class="input-group">
+                    <label>Away Team</label>
+                    <input type="text" id="m-away" placeholder="e.g. AFC Leopards">
+                </div>
+                <div class="input-group">
+                    <label>League</label>
+                    <input type="text" id="m-league" placeholder="e.g. Kenya Premier League">
+                </div>
+                <div class="input-group">
+                    <label>Match Time</label>
+                    <input type="time" id="m-time">
+                </div>
+                <div class="input-group">
+                    <label>Pick 1X2</label>
+                    <select id="m-p1"><option>1</option><option>X</option><option>2</option></select>
+                </div>
+                <div class="input-group">
+                    <label>Pick DC</label>
+                    <select id="m-pd"><option>1X</option><option>12</option><option>X2</option></select>
+                </div>
+                <button onclick="window.saveManual()" class="btn-full">Publish Manual Prediction</button>
+            </div>
+        </div>
     </div>
 
     <nav class="date-nav">
@@ -49,109 +93,111 @@
         <button id="tab-tomorrow" onclick="window.switchDate('tomorrow')">Tomorrow</button>
     </nav>
 
-    <div id="live-predictions"></div>
+    <div id="predictions-list"></div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-    import { getDatabase, ref, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
+    import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
 
-    const firebaseConfig = {
-        databaseURL: "https://foot-6cea2-default-rtdb.firebaseio.com" // ROOT URL ONLY
-    };
-
+    const firebaseConfig = { databaseURL: "https://foot-6cea2-default-rtdb.firebaseio.com" };
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    let passkey = "";
-    let activeView = 'today';
     const API_TOKEN = "84894bcd59084ad998673b09f0bc221c";
+    let adminPass = "";
+    let activeTab = 'today';
 
     window.unlockAdmin = () => {
-        const entry = prompt("Enter Passkey:");
-        if(entry) { passkey = entry; document.getElementById('admin-ui').style.display = 'block'; render(); }
+        const p = prompt("Passkey:");
+        if(p) { adminPass = p; document.getElementById('admin-panel').style.display = 'block'; render(); }
     };
 
-    window.switchDate = (val) => {
-        activeView = val;
-        document.querySelectorAll('.date-nav button').forEach(b => b.classList.remove('active'));
-        document.getElementById(`tab-${val}`).classList.add('active');
-        render();
-    };
-
-    window.fetchFromAPI = async () => {
-        const date = document.getElementById('fetch-date').value;
-        const listDiv = document.getElementById('api-list');
+    // API LOGIC
+    window.fetchAPI = async () => {
+        const date = document.getElementById('api-date').value;
+        const resDiv = document.getElementById('api-results');
         if(!date) return alert("Select Date");
+        resDiv.innerHTML = "Fetching...";
         
-        // Using direct API call (This works on GitHub/Live servers without proxy)
         try {
-            const res = await fetch(`https://api.football-data.org/v4/matches?dateFrom=${date}&dateTo=${date}`, {
-                headers: { "X-Auth-Token": API_TOKEN }
-            });
+            const url = `https://api.football-data.org/v4/matches?dateFrom=${date}&dateTo=${date}`;
+            const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, { headers: { "X-Auth-Token": API_TOKEN } });
             const data = await res.json();
-            window.allFixtures = data.matches; // Store globally for searching
-            window.filterAPILis();
-        } catch (e) { alert("API Error. Ensure you are hosted on a live server or use the CORS proxy for local testing."); }
-    };
-
-    window.filterAPILis = () => {
-        const query = document.getElementById('api-search').value.toLowerCase();
-        const listDiv = document.getElementById('api-list');
-        listDiv.innerHTML = "";
-        
-        window.allFixtures.filter(m => 
-            m.homeTeam.name.toLowerCase().includes(query) || 
-            m.awayTeam.name.toLowerCase().includes(query)
-        ).forEach(m => {
-            const row = document.createElement('div');
-            row.className = "api-fixture";
-            row.innerHTML = `
-                <span>${m.homeTeam.name} vs ${m.awayTeam.name}</span>
-                <div>
-                    <select id="p1-${m.id}"><option>1</option><option>X</option><option>2</option></select>
-                    <select id="pd-${m.id}"><option>1X</option><option>12</option><option>X2</option></select>
-                    <button onclick="window.saveMatch('${m.id}', '${m.competition.name.replace(/'/g,"")}', '${m.homeTeam.name.replace(/'/g,"")}', '${m.awayTeam.name.replace(/'/g,"")}', '${m.utcDate}')">Add</button>
-                </div>`;
-            listDiv.appendChild(row);
-        });
+            resDiv.innerHTML = "";
+            data.matches.forEach(m => {
+                const div = document.createElement('div');
+                div.className = "api-item";
+                div.innerHTML = `<span>${m.homeTeam.shortName || m.homeTeam.name} vs ${m.awayTeam.shortName || m.awayTeam.name}</span>
+                    <button class="btn-s" onclick="window.saveMatch('${m.id}', '${m.competition.name.replace(/'/g,"")}', '${m.homeTeam.name.replace(/'/g,"")}', '${m.awayTeam.name.replace(/'/g,"")}', '${m.utcDate}')">Add</button>`;
+                resDiv.appendChild(div);
+            });
+        } catch(e) { resDiv.innerHTML = "No Top League matches found."; }
     };
 
     window.saveMatch = (id, league, home, away, utc) => {
         const d = new Date(utc);
         push(ref(db, 'matches'), {
             league, homeTeam: home, awayTeam: away,
-            pred1X2: document.getElementById(`p1-${id}`).value,
-            predDC: document.getElementById(`pd-${id}`).value,
+            p1: "1", pd: "1X", // Default picks for API speed
             date: d.toISOString().split('T')[0],
             time: d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:false}),
-            status: 'pending', adminKey: passkey
-        }).then(() => alert("Posted!"));
+            status: 'pending', adminKey: adminPass
+        }).then(() => alert("Added!"));
     };
 
-    window.updateStatus = (id, s) => update(ref(db, `matches/${id}`), { status: s, adminKey: passkey });
+    // MANUAL LOGIC
+    window.saveManual = () => {
+        const date = document.getElementById('api-date').value || new Date().toISOString().split('T')[0];
+        push(ref(db, 'matches'), {
+            homeTeam: document.getElementById('m-home').value,
+            awayTeam: document.getElementById('m-away').value,
+            league: document.getElementById('m-league').value,
+            time: document.getElementById('m-time').value,
+            p1: document.getElementById('m-p1').value,
+            pd: document.getElementById('m-pd').value,
+            date: date,
+            status: 'pending', adminKey: adminPass
+        }).then(() => alert("Manual Prediction Live!"));
+    };
+
+    // VIEW LOGIC
+    window.switchDate = (t) => {
+        activeTab = t;
+        document.querySelectorAll('.date-nav button').forEach(b => b.classList.remove('active'));
+        document.getElementById(`tab-${t}`).classList.add('active');
+        render();
+    };
+
+    window.updateStatus = (id, s) => update(ref(db, `matches/${id}`), { status: s, adminKey: adminPass });
+    window.deleteMatch = (id) => { if(confirm("Delete?")) remove(ref(db, `matches/${id}`)); };
 
     function render() {
         const d = new Date();
-        if(activeView === 'yesterday') d.setDate(d.getDate() - 1);
-        if(activeView === 'tomorrow') d.setDate(d.getDate() + 1);
+        if(activeTab === 'yesterday') d.setDate(d.getDate() - 1);
+        if(activeTab === 'tomorrow') d.setDate(d.getDate() + 1);
         const target = d.toISOString().split('T')[0];
 
         onValue(ref(db, 'matches'), (snap) => {
+            const list = document.getElementById('predictions-list');
+            list.innerHTML = "";
             const data = snap.val();
-            const cont = document.getElementById('live-predictions');
-            cont.innerHTML = "";
             if(!data) return;
 
             Object.entries(data).filter(([id, m]) => m.date === target).forEach(([id, m]) => {
                 const icon = m.status === 'win' ? '✅' : (m.status === 'loss' ? '❌' : '⏳');
-                cont.innerHTML += `
+                list.innerHTML += `
                     <div class="match-card">
-                        <div><small>${m.time} | ${m.league}</small><br><b>${m.homeTeam} vs ${m.awayTeam}</b></div>
-                        <div>
-                            <span class="badge b-win">${m.pred1X2}</span>
-                            <span class="badge b-dc">${m.predDC}</span>
-                            <span style="margin-left:10px">${icon}</span>
-                            ${passkey ? `<br><button class="action" onclick="window.updateStatus('${id}','win')">Win</button><button class="action" onclick="window.updateStatus('${id}','loss')">Loss</button>` : ''}
+                        <div style="flex:1">
+                            <small style="color:var(--accent); font-weight:bold;">${m.time} | ${m.league}</small>
+                            <div style="font-weight:700; font-size:1.1rem; margin-top:4px;">${m.homeTeam} vs ${m.awayTeam}</div>
+                        </div>
+                        <div style="text-align:right">
+                            <div><span class="badge b-1x2">${m.p1}</span><span class="badge b-dc">${m.pd}</span><span style="margin-left:8px;">${icon}</span></div>
+                            ${adminPass ? `<div class="admin-controls">
+                                <button class="btn-s btn-win" onclick="window.updateStatus('${id}','win')">Win</button>
+                                <button class="btn-s btn-loss" onclick="window.updateStatus('${id}','loss')">Loss</button>
+                                <button class="btn-s btn-del" onclick="window.deleteMatch('${id}')">Del</button>
+                            </div>` : ''}
                         </div>
                     </div>`;
             });
