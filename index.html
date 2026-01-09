@@ -2,63 +2,86 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProPredict | Live Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ProPredict | Double Chance</title>
     <style>
         :root { --primary: #0f172a; --accent: #0ea5e9; --bg: #f1f5f9; --win: #10b981; --loss: #ef4444; }
-        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); margin: 0; color: #1e293b; }
-        header { background: var(--primary); color: white; padding: 1.2rem; text-align: center; position: relative; }
-        .container { max-width: 800px; margin: auto; padding: 15px; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 0; overflow-x: hidden; }
+        
+        /* Header & Nav */
+        header { background: var(--primary); color: white; padding: 1rem; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .container { max-width: 600px; margin: auto; padding: 12px; }
+        
+        /* Admin UI - Fitted Frame */
+        #admin-panel { display: none; background: white; border-radius: 12px; padding: 15px; margin-bottom: 20px; border: 2px solid var(--accent); }
+        .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 16px; /* Prevents iOS zoom */ }
+        .full-width { grid-column: span 2; }
+        .btn-post { background: var(--primary); color: white; border: none; font-weight: 700; cursor: pointer; }
+        .btn-logout { background: #fee2e2; color: #b91c1c; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; float: right; }
 
-        /* Admin Section */
-        #admin-panel { display: none; background: white; border-radius: 16px; padding: 20px; margin-bottom: 25px; border: 2px solid var(--accent); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
-        input, select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; }
-        .btn-full { grid-column: span 2; background: var(--primary); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; }
+        /* Stats Bar */
+        .stats { display: flex; justify-content: space-around; background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .stat-item { text-align: center; }
+        .stat-val { display: block; font-weight: 800; font-size: 1.2rem; }
+
+        /* Tabs */
+        .date-nav { display: flex; gap: 5px; margin-bottom: 15px; background: #e2e8f0; padding: 4px; border-radius: 10px; }
+        .date-nav button { flex: 1; padding: 10px 5px; border: none; border-radius: 7px; background: none; font-weight: 700; color: #64748b; font-size: 13px; cursor: pointer; }
+        .date-nav button.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        /* Match Cards */
+        .match-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+        .m-info { flex: 1; }
+        .m-league { font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase; }
+        .m-teams { font-weight: 700; font-size: 1rem; margin: 3px 0; }
+        .m-time { font-size: 11px; color: #94a3b8; }
+        .m-pick { text-align: right; }
+        .badge-dc { background: #475569; color: white; padding: 4px 10px; border-radius: 5px; font-weight: 800; font-size: 14px; }
         
-        /* Navigation & Cards */
-        .date-nav { display: flex; gap: 8px; margin-bottom: 20px; background: #e2e8f0; padding: 6px; border-radius: 12px; }
-        .date-nav button { flex: 1; padding: 12px; border: none; border-radius: 8px; background: none; font-weight: 700; cursor: pointer; color: #64748b; }
-        .date-nav button.active { background: white; color: var(--primary); }
-        .match-card { background: white; padding: 18px; border-radius: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 6px solid var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .badge { padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 800; color: white; background: #475569; }
-        
-        /* Controls */
-        .admin-controls { margin-top: 10px; display: flex; gap: 5px; border-top: 1px solid #f1f5f9; padding-top: 10px; }
-        .btn-s { padding: 6px 10px; border-radius: 6px; cursor: pointer; border: 1px solid #cbd5e1; font-size: 0.7rem; font-weight: 700; }
-        .btn-win { color: var(--win); border-color: var(--win); }
-        .btn-loss { color: var(--loss); border-color: var(--loss); }
-        .btn-del { background: #fee2e2; color: #dc2626; border: none; }
+        /* Admin Inline Controls */
+        .controls { margin-top: 10px; display: flex; gap: 4px; border-top: 1px solid #f1f5f9; padding-top: 8px; }
+        .c-btn { flex: 1; padding: 6px; border-radius: 5px; border: 1px solid #cbd5e1; font-size: 11px; font-weight: 700; cursor: pointer; background: white; }
+        .c-win { color: var(--win); border-color: var(--win); }
+        .c-loss { color: var(--loss); border-color: var(--loss); }
+        .c-del { color: white; background: var(--loss); border: none; }
     </style>
 </head>
 <body>
 
 <header>
-    <h2 style="margin:0">PREDICT PRO</h2>
-    <button onclick="window.unlockAdmin()" style="position:absolute; right:15px; top:18px; background:rgba(255,255,255,0.2); border:none; color:white; padding:5px 12px; border-radius:6px; cursor:pointer;">Admin</button>
+    <span style="font-weight: 900; letter-spacing: 1px;">PREDICT PRO</span>
+    <button onclick="window.unlockAdmin()" id="admin-lock-btn" style="position:absolute; right:10px; top:12px; background:rgba(255,255,255,0.2); border:none; color:white; padding:6px 10px; border-radius:6px; font-size:12px;">Admin</button>
 </header>
 
 <div class="container">
     <div id="admin-panel">
-        <h3 style="margin-top:0">Manual Double Chance Entry</h3>
+        <button class="btn-logout" onclick="window.logout()">Logout ✕</button>
+        <h3 style="margin: 0 0 15px 0; font-size: 16px;">New DC Prediction</h3>
+        
         <div class="admin-grid">
             <input type="text" id="m-home" placeholder="Home Team">
             <input type="text" id="m-away" placeholder="Away Team">
-            <input type="text" id="m-league" placeholder="League Name">
+            <input type="text" id="m-league" placeholder="League (e.g. EPL)">
             <input type="time" id="m-time">
-            <select id="m-pd" style="grid-column: span 2;">
+            <input type="date" id="m-date" class="full-width">
+            <select id="m-pd" class="full-width">
                 <option value="1X">1X (Home Win or Draw)</option>
                 <option value="12">12 (Any Team Win)</option>
                 <option value="X2">X2 (Away Win or Draw)</option>
             </select>
-            <button onclick="window.saveManual()" class="btn-full">Publish Prediction</button>
+            <button onclick="window.saveManual()" class="btn-full btn-post">PUBLISH PREDICTION</button>
+            <p style="grid-column: span 2; text-align: center; margin: 5px 0; font-size: 11px; color: #94a3b8;">— OR —</p>
+            <button onclick="window.fetchAPI()" class="btn-full" style="background:#e2e8f0; color:#475569; border:none; padding:8px; border-radius:8px;">FETCH API (TOP LEAGUES)</button>
         </div>
-        <hr style="margin:20px 0; opacity:0.1">
-        <div style="display:flex; gap:10px;">
-            <input type="date" id="api-date" style="flex:2">
-            <button onclick="window.fetchAPI()" style="flex:1">Load API</button>
-        </div>
-        <div id="api-results" style="max-height:150px; overflow-y:auto; margin-top:10px; font-size:0.8rem"></div>
+        <div id="api-results" style="max-height:120px; overflow-y:auto; margin-top:10px; font-size:12px; border-top:1px solid #eee;"></div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-item"><small>TOTAL</small><span id="s-total" class="stat-val">0</span></div>
+        <div class="stat-item"><small>WINS</small><span id="s-wins" class="stat-val" style="color:var(--win)">0</span></div>
+        <div class="stat-item"><small>WIN %</small><span id="s-rate" class="stat-val" style="color:var(--accent)">0%</span></div>
     </div>
 
     <nav class="date-nav">
@@ -74,44 +97,47 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
     import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js";
 
-    // 1. CONFIG (Root URL Only)
     const firebaseConfig = { databaseURL: "https://foot-6cea2-default-rtdb.firebaseio.com" };
-    
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const API_TOKEN = "84894bcd59084ad998673b09f0bc221c";
     let adminPass = "";
     let activeTab = 'today';
 
-    // 2. ADMIN FUNCTIONS
     window.unlockAdmin = () => {
-        const p = prompt("Admin Passkey:");
-        if(p) { adminPass = p; document.getElementById('admin-panel').style.display = 'block'; render(); }
+        const p = prompt("Enter Passkey:");
+        if(p) { adminPass = p; document.getElementById('admin-panel').style.display = 'block'; document.getElementById('admin-lock-btn').style.display = 'none'; render(); }
+    };
+
+    window.logout = () => {
+        adminPass = "";
+        document.getElementById('admin-panel').style.display = 'none';
+        document.getElementById('admin-lock-btn').style.display = 'block';
+        render();
     };
 
     window.saveManual = () => {
-        const date = document.getElementById('api-date').value || new Date().toISOString().split('T')[0];
+        const date = document.getElementById('m-date').value || new Date().toISOString().split('T')[0];
         push(ref(db, 'matches'), {
             homeTeam: document.getElementById('m-home').value,
             awayTeam: document.getElementById('m-away').value,
             league: document.getElementById('m-league').value,
             time: document.getElementById('m-time').value,
             pd: document.getElementById('m-pd').value,
-            date: date,
-            status: 'pending',
-            adminKey: adminPass
-        }).then(() => alert("Added!"));
+            date: date, status: 'pending', adminKey: adminPass
+        }).then(() => { alert("Match Posted!"); document.querySelectorAll('#admin-panel input').forEach(i => i.value = ""); });
     };
 
     window.fetchAPI = async () => {
-        const date = document.getElementById('api-date').value;
-        if(!date) return alert("Select Date");
-        const url = `https://api.football-data.org/v4/matches?dateFrom=${date}&dateTo=${date}`;
+        const date = document.getElementById('m-date').value || new Date().toISOString().split('T')[0];
+        const resDiv = document.getElementById('api-results');
+        resDiv.innerHTML = "Fetching...";
         try {
+            const url = `https://api.football-data.org/v4/matches?dateFrom=${date}&dateTo=${date}`;
             const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`, { headers: { "X-Auth-Token": API_TOKEN } });
             const data = await res.json();
-            const resDiv = document.getElementById('api-results');
             resDiv.innerHTML = "";
+            if(!data.matches.length) resDiv.innerHTML = "No matches found in API for this date.";
             data.matches.forEach(m => {
                 const d = document.createElement('div');
                 d.style = "display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee;";
@@ -119,7 +145,7 @@
                     <button onclick="window.saveAPI('${m.competition.name.replace(/'/g,"")}','${m.homeTeam.name.replace(/'/g,"")}','${m.awayTeam.name.replace(/'/g,"")}','${m.utcDate}')">Add</button>`;
                 resDiv.appendChild(d);
             });
-        } catch(e) { alert("API Error or No Matches."); }
+        } catch(e) { resDiv.innerHTML = "API Error. Try Manual Add."; }
     };
 
     window.saveAPI = (lg, h, a, utc) => {
@@ -132,7 +158,6 @@
         }).then(() => alert("API Match Added!"));
     };
 
-    // 3. ACTIONS
     window.switchDate = (t) => {
         activeTab = t;
         document.querySelectorAll('.date-nav button').forEach(b => b.classList.remove('active'));
@@ -141,17 +166,8 @@
     };
 
     window.updateStatus = (id, s) => update(ref(db, `matches/${id}`), { status: s, adminKey: adminPass });
-    
-    window.deleteMatch = (id) => {
-        if(confirm("Permanently delete this?")) {
-            // This is the core delete logic
-            remove(ref(db, `matches/${id}`))
-                .then(() => console.log("Deleted"))
-                .catch((e) => alert("Error: Update your Firebase Rules!"));
-        }
-    };
+    window.deleteMatch = (id) => { if(confirm("Delete Permanently?")) remove(ref(db, `matches/${id}`)); };
 
-    // 4. DISPLAY
     function render() {
         const d = new Date();
         if(activeTab === 'yesterday') d.setDate(d.getDate() - 1);
@@ -162,26 +178,41 @@
             const list = document.getElementById('predictions-list');
             list.innerHTML = "";
             const data = snap.val();
-            if(!data) return;
-
-            Object.entries(data).filter(([id, m]) => m.date === target).forEach(([id, m]) => {
-                const icon = m.status === 'win' ? '✅' : (m.status === 'loss' ? '❌' : '⏳');
-                list.innerHTML += `
-                    <div class="match-card">
-                        <div style="flex:1">
-                            <small style="color:var(--accent); font-weight:bold;">${m.time} | ${m.league}</small>
-                            <div style="font-weight:700; font-size:1.1rem; margin-top:4px;">${m.homeTeam} vs ${m.awayTeam}</div>
-                        </div>
-                        <div style="text-align:right">
-                            <div><span class="badge">${m.pd}</span><span style="margin-left:8px;">${icon}</span></div>
-                            ${adminPass ? `<div class="admin-controls">
-                                <button class="btn-s btn-win" onclick="window.updateStatus('${id}','win')">Win</button>
-                                <button class="btn-s btn-loss" onclick="window.updateStatus('${id}','loss')">Loss</button>
-                                <button class="btn-s btn-del" onclick="window.deleteMatch('${id}')">Del</button>
-                            </div>` : ''}
-                        </div>
-                    </div>`;
-            });
+            
+            let w = 0, total = 0;
+            if(data) {
+                Object.entries(data).forEach(([id, m]) => {
+                    if(m.status === 'win') w++;
+                    if(m.status !== 'pending') total++;
+                    
+                    if(m.date === target) {
+                        const icon = m.status === 'win' ? '✅' : (m.status === 'loss' ? '❌' : '⏳');
+                        list.innerHTML += `
+                            <div class="match-card">
+                                <div class="m-info">
+                                    <div class="m-league">${m.league}</div>
+                                    <div class="m-teams">${m.homeTeam} vs ${m.awayTeam}</div>
+                                    <div class="m-time">${m.time}</div>
+                                </div>
+                                <div class="m-pick">
+                                    <div class="badge-dc">${m.pd}</div>
+                                    <div style="margin-top:5px; font-size:18px">${icon}</div>
+                                </div>
+                            </div>
+                            ${adminPass ? `
+                                <div class="controls" style="max-width:600px; margin:-5px auto 15px auto; padding:0 12px;">
+                                    <button class="c-btn c-win" onclick="window.updateStatus('${id}','win')">WIN</button>
+                                    <button class="c-btn c-loss" onclick="window.updateStatus('${id}','loss')">LOSS</button>
+                                    <button class="c-btn c-del" onclick="window.deleteMatch('${id}')">DELETE</button>
+                                </div>` : ''}`;
+                    }
+                });
+            }
+            if(list.innerHTML === "") list.innerHTML = "<p style='text-align:center; color:#94a3b8; padding-top:20px;'>No predictions for this date.</p>";
+            
+            document.getElementById('s-wins').innerText = w;
+            document.getElementById('s-total').innerText = total;
+            document.getElementById('s-rate').innerText = (total > 0 ? Math.round(w/total*100) : 0) + "%";
         });
     }
     render();
