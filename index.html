@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ProPredict | Double Chance</title>
+    <title>ProPredict | Admin Report v4</title>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
         :root { --primary: #0f172a; --accent: #0ea5e9; --bg: #f1f5f9; --win: #10b981; --loss: #ef4444; }
         * { box-sizing: border-box; }
-        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 0; overflow-x: hidden; }
-        header { background: var(--primary); color: white; padding: 1rem; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        header { background: var(--primary); color: white; padding: 1rem; text-align: center; position: sticky; top: 0; z-index: 100; }
         .container { max-width: 600px; margin: auto; padding: 12px; }
         #admin-panel { display: none; background: white; border-radius: 12px; padding: 15px; margin-bottom: 20px; border: 2px solid var(--accent); }
         .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -20,18 +19,21 @@
         .full-width { grid-column: span 2; }
         .btn-post { background: var(--primary); color: white; border: none; font-weight: 700; cursor: pointer; padding: 12px; border-radius: 8px; }
         .btn-logout { background: #fee2e2; color: #b91c1c; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; float: right; }
-        .stats { display: flex; justify-content: space-around; background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .stats { display: flex; justify-content: space-around; background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
         .stat-val { display: block; font-weight: 800; font-size: 1.2rem; text-align: center; }
         .date-nav { display: flex; gap: 5px; margin-bottom: 15px; background: #e2e8f0; padding: 4px; border-radius: 10px; }
-        .date-nav button { flex: 1; padding: 10px 5px; border: none; border-radius: 7px; background: none; font-weight: 700; color: #64748b; font-size: 13px; cursor: pointer; }
-        .date-nav button.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .match-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+        .date-nav button { flex: 1; padding: 10px; border: none; border-radius: 7px; background: none; font-weight: 700; cursor: pointer; font-size: 13px; }
+        .date-nav button.active { background: white; color: var(--primary); }
+        
+        /* Match Card Styles */
+        .match-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .m-league { font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase; }
-        .m-teams { font-weight: 700; font-size: 1rem; margin: 3px 0; }
-        .m-time { font-size: 11px; color: #94a3b8; }
-        .badge-dc { background: #475569; color: white; padding: 4px 10px; border-radius: 5px; font-weight: 800; font-size: 14px; }
-        .controls { margin-top: 10px; display: flex; gap: 4px; border-top: 1px solid #f1f5f9; padding-top: 8px; }
-        .c-btn { flex: 1; padding: 6px; border-radius: 5px; border: 1px solid #cbd5e1; font-size: 11px; font-weight: 700; cursor: pointer; background: white; }
+        .m-teams { font-weight: 700; font-size: 1rem; margin: 2px 0; }
+        .m-time { font-size: 11px; color: #64748b; }
+        .badge-dc { background: #475569; color: white; padding: 4px 10px; border-radius: 5px; font-weight: 800; font-size: 14px; display: inline-block; }
+        .cs-label { display: block; font-size: 12px; font-weight: 900; color: var(--primary); margin-top: 4px; }
+        .controls { margin-top: 5px; display: flex; gap: 4px; padding-bottom: 10px; }
+        .c-btn { flex: 1; padding: 8px; border-radius: 5px; border: 1px solid #cbd5e1; font-size: 11px; font-weight: 700; cursor: pointer; background: white; }
     </style>
 </head>
 <body>
@@ -46,7 +48,7 @@
         <button class="btn-logout" onclick="window.logout()">Logout ✕</button>
         <h3 style="margin: 0 0 15px 0; font-size: 16px;">Admin Dashboard</h3>
         
-        <button onclick="window.exportToPDF()" style="width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:none; background:#10b981; color:white; font-weight:bold; cursor:pointer;">📥 DOWNLOAD PDF REPORT</button>
+        <button onclick="window.exportToPDF()" style="width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:none; background:#10b981; color:white; font-weight:bold; cursor:pointer;">📥 DOWNLOAD CLEAN PDF REPORT</button>
 
         <div class="admin-grid">
             <input type="text" id="m-home" placeholder="Home Team">
@@ -67,9 +69,9 @@
     </div>
 
     <div class="stats">
-        <div class="stat-item"><small>TOTAL</small><span id="s-total" class="stat-val">0</span></div>
-        <div class="stat-item"><small>WINS</small><span id="s-wins" class="stat-val" style="color:var(--win)">0</span></div>
-        <div class="stat-item"><small>WIN %</small><span id="s-rate" class="stat-val" style="color:var(--accent)">0%</span></div>
+        <div><small>TOTAL</small><span id="s-total" class="stat-val">0</span></div>
+        <div><small>WINS</small><span id="s-wins" class="stat-val" style="color:var(--win)">0</span></div>
+        <div><small>WIN %</small><span id="s-rate" class="stat-val" style="color:var(--accent)">0%</span></div>
     </div>
 
     <nav class="date-nav">
@@ -92,7 +94,6 @@
     let adminPass = "";
     let activeTab = 'today';
 
-    // UPDATED ADMIN LOCK WITH PASSKEY
     window.unlockAdmin = () => {
         const p = prompt("Enter Admin Passkey:");
         if(p === "Admin@2026") { 
@@ -100,9 +101,7 @@
             document.getElementById('admin-panel').style.display = 'block'; 
             document.getElementById('admin-lock-btn').style.display = 'none'; 
             render(); 
-        } else if (p !== null) {
-            alert("Incorrect Passkey!");
-        }
+        } else if (p !== null) alert("Incorrect Passkey!");
     };
 
     window.logout = () => { adminPass = ""; document.getElementById('admin-panel').style.display = 'none'; document.getElementById('admin-lock-btn').style.display = 'block'; render(); };
@@ -130,11 +129,11 @@
     window.saveAPI = (lg, h, a, utc) => {
         const d = new Date(utc);
         push(ref(db, 'matches'), {
-            league: lg, homeTeam: h, awayTeam: a, pd: "1X",
+            league: lg, homeTeam: h, awayTeam: a, pd: "1X", cs: "-",
             date: d.toISOString().split('T')[0],
             time: d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:false}),
             status: 'pending'
-        }).then(() => alert("API Match Added!"));
+        });
     };
 
     window.saveManual = () => {
@@ -145,54 +144,64 @@
             league: document.getElementById('m-league').value,
             time: document.getElementById('m-time').value,
             pd: document.getElementById('m-pd').value,
-            date: date, status: 'pending'
+            cs: "-", status: 'pending', date: date
         }).then(() => { alert("Match Posted!"); render(); });
     };
 
-    // FINAL PDF EXPORT
-    window.exportToPDF = () => {
-        try {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            const rows = [];
-            const activeDateLabel = document.querySelector('.date-nav button.active').innerText;
-            
-            document.querySelectorAll('.match-card').forEach(card => {
-                const lg = card.querySelector('.m-league').innerText;
-                const teams = card.querySelector('.m-teams').innerText;
-                const time = card.querySelector('.m-time').innerText;
-                const pick = card.querySelector('.badge-dc').innerText;
-                const icon = card.querySelector('.m-pick div:last-child').innerText;
-                let status = icon === '✅' ? "WIN" : (icon === '❌' ? "LOSS" : "PENDING");
-                rows.push([time, lg, teams, pick, status]);
-            });
-
-            if (rows.length === 0) return alert("No data available to export.");
-
-            const autoTable = doc.autoTable || window.autoTable || (window.jspdf ? window.jspdf.jsPDF.autoTable : null);
-
-            if (!autoTable) {
-                alert("PDF engine is initializing, please try again in 3 seconds.");
-                return;
-            }
-
-            doc.setFontSize(20);
-            doc.text("PREDICT PRO REPORT", 14, 20);
-            doc.setFontSize(10);
-            doc.text(`Fixtures for: ${activeDateLabel}`, 14, 28);
-
-            autoTable(doc, {
-                startY: 35,
-                head: [['Time', 'League', 'Match', 'Pick', 'Status']],
-                body: rows,
-                headStyles: { fillColor: [15, 23, 42] }
-            });
-
-            doc.save(`PredictPro_${activeDateLabel}.pdf`);
-        } catch (err) {
-            console.error(err);
-            alert("Error generating PDF. Please ensure you are connected to the internet.");
+    window.editPrediction = (id, currentPd) => {
+        const newPd = prompt("New Prediction (1X, 12, X2):", currentPd);
+        if (newPd && ["1X", "12", "X2"].includes(newPd.toUpperCase())) {
+            update(ref(db, `matches/${id}`), { pd: newPd.toUpperCase() });
         }
+    };
+
+    window.settleMatch = (id, pd) => {
+        const score = prompt("Final Score (e.g., 2-1):");
+        if (!score || !score.includes('-')) return;
+        const [hG, aG] = score.split('-').map(Number);
+        let result = 'loss';
+        if (pd === "1X" && hG >= aG) result = 'win';
+        if (pd === "12" && hG !== aG) result = 'win';
+        if (pd === "X2" && aG >= hG) result = 'win';
+        update(ref(db, `matches/${id}`), { cs: score, status: result });
+    };
+
+    // --- CLEAN PDF GENERATOR ---
+    window.exportToPDF = () => {
+        const list = document.getElementById('predictions-list');
+        const activeDateLabel = document.querySelector('.date-nav button.active').innerText;
+        
+        // 1. Create a "Hidden" container for the PDF content
+        const pdfContent = document.createElement('div');
+        pdfContent.style.padding = '20px';
+        pdfContent.style.background = '#f1f5f9';
+        
+        // 2. Add a professional Title Header
+        const headerHtml = `
+            <div style="text-align:center; border-bottom:3px solid #0f172a; padding-bottom:15px; margin-bottom:20px;">
+                <h1 style="margin:0; color:#0f172a; font-size:24px;">PREDICT PRO OFFICIAL REPORT</h1>
+                <p style="margin:5px 0 0 0; color:#64748b;">Fixtures for: <b>${activeDateLabel}</b></p>
+                <small style="color:#94a3b8;">Generated on: ${new Date().toLocaleString()}</small>
+            </div>
+        `;
+        pdfContent.innerHTML = headerHtml;
+
+        // 3. Clone the Match Cards and Clean them
+        const clonedList = list.cloneNode(true);
+        clonedList.querySelectorAll('.controls').forEach(el => el.remove()); // Remove admin buttons
+        
+        pdfContent.appendChild(clonedList);
+
+        // 4. Generate the PDF
+        const opt = {
+            margin: 5,
+            filename: `PredictPro_${activeDateLabel}.pdf`,
+            image: { type: 'jpeg', quality: 1 },
+            html2canvas: { scale: 3, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(pdfContent).save();
     };
 
     window.switchDate = (t) => {
@@ -202,7 +211,6 @@
         render();
     };
 
-    window.updateStatus = (id, s) => update(ref(db, `matches/${id}`), { status: s });
     window.deleteMatch = (id) => { if(confirm("Delete?")) remove(ref(db, `matches/${id}`)); };
 
     function render() {
@@ -214,8 +222,8 @@
         onValue(ref(db, 'matches'), (snap) => {
             const list = document.getElementById('predictions-list');
             list.innerHTML = "";
-            const data = snap.val();
             let w = 0, total = 0;
+            const data = snap.val();
             if(data) {
                 Object.entries(data).forEach(([id, m]) => {
                     if(m.status === 'win') w++;
@@ -224,17 +232,23 @@
                         const icon = m.status === 'win' ? '✅' : (m.status === 'loss' ? '❌' : '⏳');
                         list.innerHTML += `
                             <div class="match-card">
-                                <div class="m-info">
+                                <div>
                                     <div class="m-league">${m.league}</div>
                                     <div class="m-teams">${m.homeTeam} vs ${m.awayTeam}</div>
                                     <div class="m-time">${m.time}</div>
                                 </div>
-                                <div class="m-pick">
+                                <div style="text-align:right">
                                     <div class="badge-dc">${m.pd}</div>
-                                    <div style="margin-top:5px; font-size:18px">${icon}</div>
+                                    <span class="cs-label">FT: ${m.cs || '-'}</span>
+                                    <div class="status-icon" style="margin-top:2px; font-size:16px">${icon}</div>
                                 </div>
                             </div>
-                            ${adminPass ? `<div class="controls"><button class="c-btn" onclick="window.updateStatus('${id}','win')">WIN</button><button class="c-btn" onclick="window.updateStatus('${id}','loss')">LOSS</button><button class="c-btn" style="background:#fee2e2" onclick="window.deleteMatch('${id}')">DEL</button></div>` : ''}`;
+                            ${adminPass ? `
+                            <div class="controls">
+                                <button class="c-btn" onclick="window.editPrediction('${id}','${m.pd}')">EDIT</button>
+                                <button class="c-btn" onclick="window.settleMatch('${id}','${m.pd}')">SCORE</button>
+                                <button class="c-btn" style="color:red" onclick="window.deleteMatch('${id}')">DEL</button>
+                            </div>` : ''}`;
                     }
                 });
             }
