@@ -18,14 +18,20 @@
         header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 20px; }
         .logo { font-size: 22px; font-weight: 800; }
         .logo span { color: var(--accent); }
-        .tabs { display: flex; background: var(--card-bg); padding: 5px; border-radius: 15px; margin-bottom: 20px; }
-        .tab { flex: 1; text-align: center; padding: 12px; font-size: 12px; cursor: pointer; border-radius: 12px; color: var(--text-dim); }
+        
+        .search-row { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; }
+        .date-search { flex: 1; background: var(--card-bg); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 12px; font-family: 'Outfit'; outline: none; font-size: 13px; }
+        
+        .tabs { display: flex; background: var(--card-bg); padding: 5px; border-radius: 15px; flex: 2; }
+        .tab { flex: 1; text-align: center; padding: 10px; font-size: 11px; cursor: pointer; border-radius: 12px; color: var(--text-dim); transition: 0.3s; }
         .tab.active { background: linear-gradient(135deg, #00f2ff, #0072ff); color: #000; font-weight: 700; }
+        
         .matrix { background: var(--card-bg); padding: 20px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; display: none; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .input-group { background: rgba(0,0,0,0.2); padding: 8px; border-radius: 10px; margin-bottom: 10px; }
         .input-group label { font-size: 9px; color: var(--text-dim); display: block; }
         input { width: 100%; background: transparent; border: none; color: white; font-weight: 600; outline: none; }
+        
         .btn-push { width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--accent); color: #000; font-weight: 800; cursor: pointer; }
         .match-card { background: var(--card-bg); border-radius: 18px; padding: 15px; margin-bottom: 12px; border: 1px solid var(--border); }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -45,14 +51,17 @@
         <button onclick="toggleAdmin()" id="adminBtn" style="background:none; border:1px solid var(--accent); color:var(--accent); border-radius:10px; padding:5px 10px; cursor:pointer;">ADMIN</button>
     </header>
 
-    <div class="tabs">
-        <div class="tab" id="tab-yesterday" onclick="setFilter('yesterday')">YESTERDAY</div>
-        <div class="tab active" id="tab-today" onclick="setFilter('today')">TODAY</div>
-        <div class="tab" id="tab-tomorrow" onclick="setFilter('tomorrow')">TOMORROW</div>
+    <div class="search-row">
+        <div class="tabs">
+            <div class="tab" id="tab-yesterday" onclick="setFilter('yesterday')">YEST</div>
+            <div class="tab active" id="tab-today" onclick="setFilter('today')">TODAY</div>
+            <div class="tab" id="tab-tomorrow" onclick="setFilter('tomorrow')">TOMO</div>
+        </div>
+        <input type="date" id="date-lookup" class="date-search" onchange="searchByDate(this.value)">
     </div>
 
     <div class="matrix" id="admin-form">
-        <input type="date" id="match_date" style="margin-bottom:15px; background:rgba(0,0,0,0.5); padding:10px; border-radius:8px; border:1px solid var(--border); color:white;">
+        <input type="date" id="match_date" style="margin-bottom:15px; background:rgba(0,0,0,0.5); padding:10px; border-radius:8px; border:1px solid var(--border); color:white; width: 93%;">
         <div class="grid">
             <div class="input-group"><label>Home Team</label><input type="text" id="home_team"></div>
             <div class="input-group"><label>Away Team</label><input type="text" id="away_team"></div>
@@ -74,7 +83,7 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    let matches = [], currentFilter = 'today', isAdmin = false, editId = null;
+    let matches = [], currentFilter = 'today', selectedDate = '', isAdmin = false, editId = null;
 
     function toggleAdmin() {
         if (!isAdmin) { if (prompt("Key:") === "1234") isAdmin = true; } 
@@ -85,8 +94,18 @@
 
     function setFilter(t) {
         currentFilter = t;
+        selectedDate = ''; // Reset date search when tabs are clicked
+        document.getElementById('date-lookup').value = '';
         document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
         document.getElementById('tab-'+t).classList.add('active');
+        render();
+    }
+
+    function searchByDate(dateVal) {
+        if(!dateVal) return;
+        selectedDate = dateVal;
+        currentFilter = 'custom';
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
         render();
     }
 
@@ -125,62 +144,41 @@
         const s1=Math.round(p1*100), sx=Math.round(px*100), s2=100-s1-sx, diff=Math.abs(s1-s2);
         const pwr = (inpts.h_h_gs - inpts.h_h_ga) + (inpts.h_o_gs - inpts.h_o_ga) - ((inpts.a_a_gs - inpts.a_a_ga) + (inpts.a_o_gs - inpts.a_o_ga));
         
-        // 1. Goal Logic
-        const totalExp = xgh + xga;
-        const goalV = totalExp > 2.4 ? "O2.5" : "U2.5";
+        const goalV = (xgh + xga) > 2.4 ? "O2.5" : "U2.5";
+        const bttsV = ((1 - poisson(0, xgh)) * (1 - poisson(0, xga))) > 0.52 ? "BTTS-Y" : "BTTS-N";
+        
+        let risk = "MED";
+        if (diff > 40 || sx > 40) risk = "LOW"; else if (diff < 15) risk = "HIGH";
 
-        // 2. BTTS Logic
-        const probHScore = 1 - poisson(0, xgh);
-        const probAScore = 1 - poisson(0, xga);
-        const bttsProb = Math.round((probHScore * probAScore) * 100);
-        const bttsV = bttsProb > 52 ? "BTTS-Y" : "BTTS-N";
-
-        // 3. Risk Level Logic
-        let risk = "MEDIUM";
-        if (diff > 40 || (sx > 40)) risk = "LOW";
-        else if (diff < 15) risk = "HIGH";
-
-        // 4. Main Verdict Logic
         let v = "";
-        if(diff < 12 && sx > 27) v = "DRAW RISK (X)";
-        else if(sx < 22 && diff < 25) v = "HOME/AWAY (12)";
-        else if(s1 > s2) v = (diff > 32 && pwr > 2.5) ? "HOME WIN (1)" : "HOME DOUBLE (1X)";
-        else v = (diff > 32 && pwr < -2.5) ? "AWAY WIN (2)" : "AWAY DOUBLE (X2)";
+        if(diff < 12 && sx > 27) v = "DRAW (X)";
+        else if(sx < 22 && diff < 25) v = "H/A (12)";
+        else if(s1 > s2) v = (diff > 32 && pwr > 2.5) ? "WIN (1)" : "1X";
+        else v = (diff > 32 && pwr < -2.5) ? "WIN (2)" : "X2";
 
-        const fullVerdict = `${v} | ${goalV} | ${bttsV} | RISK: ${risk}`;
+        const fullVerdict = `${v} | ${goalV} | ${bttsV} | ${risk}`;
 
-        const data = { 
-            name: `${hName} vs ${aName}`, 
-            verdict: fullVerdict, 
-            probs: `${s1}%|${sx}%|${s2}%`, 
-            date: mDate, 
-            inputs: inpts, 
-            score: "-", 
-            status: "pending" 
-        };
+        const data = { name: `${hName} vs ${aName}`, verdict: fullVerdict, probs: `${s1}%|${sx}%|${s2}%`, date: mDate, inputs: inpts, score: "-", status: "pending" };
 
         if(editId) { database.ref('matches/'+editId).update(data); editId = null; }
         else { database.ref('matches').push(data); }
-        document.querySelectorAll('input').forEach(i => i.value = "");
+        document.querySelectorAll('#admin-form input').forEach(i => i.value = "");
     }
 
     function updateScore(id) {
         if(!isAdmin) return;
         const res = prompt("Enter Score (e.g. 2-1):");
         if(!res || !res.includes("-")) return;
-
         const [h, a] = res.split('-').map(Number);
         const m = matches.find(x => x.id === id);
         const tip = m.verdict;
-
         let isWin = false;
-        if (tip.includes("(12)")) { if (h !== a) isWin = true; }
-        else if (tip.includes("1X")) { if (h >= a) isWin = true; }
-        else if (tip.includes("X2")) { if (a >= h) isWin = true; }
-        else if (tip.includes("(1)")) { if (h > a) isWin = true; }
-        else if (tip.includes("(2)")) { if (a > h) isWin = true; }
-        else if (tip.includes("(X)")) { if (h === a) isWin = true; }
-
+        if (tip.includes("(12)")) isWin = h !== a;
+        else if (tip.includes("1X")) isWin = h >= a;
+        else if (tip.includes("X2")) isWin = a >= h;
+        else if (tip.includes("(1)")) isWin = h > a;
+        else if (tip.includes("(2)")) isWin = a > h;
+        else if (tip.includes("(X)")) isWin = h === a;
         database.ref('matches/'+id).update({ score: res, status: isWin ? "WON" : "LOST" });
     }
 
@@ -197,14 +195,28 @@
         document.getElementById('away_team').value = m.name.split(' vs ')[1];
         document.getElementById('match_date').value = m.date;
         for(let key in m.inputs) document.getElementById(key).value = m.inputs[key];
+        document.getElementById('admin-form').style.display = 'block';
         window.scrollTo(0,0);
     }
 
     function render() {
         const list = document.getElementById('prediction-list'); list.innerHTML = "";
-        const target = currentFilter === 'today' ? new Date().toISOString().split('T')[0] : (currentFilter === 'yesterday' ? new Date(Date.now()-86400000).toISOString().split('T')[0] : new Date(Date.now()+86400000).toISOString().split('T')[0]);
+        let target = selectedDate;
         
-        matches.filter(m => m.date === target).forEach(m => {
+        if (!target) {
+            const d = new Date();
+            if(currentFilter === 'yesterday') d.setDate(d.getDate() - 1);
+            if(currentFilter === 'tomorrow') d.setDate(d.getDate() + 1);
+            target = d.toISOString().split('T')[0];
+        }
+        
+        const filtered = matches.filter(m => m.date === target);
+        if(filtered.length === 0) {
+            list.innerHTML = `<div style="text-align:center; color:var(--text-dim); margin-top:50px; font-size:13px;">No predictions found for ${target}</div>`;
+            return;
+        }
+
+        filtered.forEach(m => {
             const sClass = m.status === 'WON' ? 'status-won' : (m.status === 'LOST' ? 'status-lost' : '');
             list.innerHTML += `
                 <div class="match-card">
