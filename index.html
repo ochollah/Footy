@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProPredict | Fixed Status Logic</title>
+    <title>ProPredict | Professional Suite</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -29,7 +29,7 @@
         .btn-push { width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--accent); color: #000; font-weight: 800; cursor: pointer; }
         .match-card { background: var(--card-bg); border-radius: 18px; padding: 15px; margin-bottom: 12px; border: 1px solid var(--border); }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .tip-badge { background: rgba(0,242,255,0.1); color: var(--accent); padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; }
+        .tip-badge { background: rgba(0,242,255,0.1); color: var(--accent); padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 800; }
         .card-actions { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 10px; }
         .score-box { background: #000; padding: 5px 15px; border-radius: 10px; font-weight: 800; cursor: pointer; border: 1px solid var(--border); }
         .status-won { color: var(--win); font-weight: 800; font-size: 11px; }
@@ -58,10 +58,10 @@
             <div class="input-group"><label>Away Team</label><input type="text" id="away_team"></div>
         </div>
         <div class="grid">
-            <div class="input-group"><label>H-Home GS|GA</label><div style="display:flex"><input type="number" id="h_h_gs">|<input type="number" id="h_h_ga"></div></div>
-            <div class="input-group"><label>A-Away GS|GA</label><div style="display:flex"><input type="number" id="a_a_gs">|<input type="number" id="a_a_ga"></div></div>
-            <div class="input-group"><label>H-Over GS|GA</label><div style="display:flex"><input type="number" id="h_o_gs">|<input type="number" id="h_o_ga"></div></div>
-            <div class="input-group"><label>A-Over GS|GA</label><div style="display:flex"><input type="number" id="a_o_gs">|<input type="number" id="a_o_ga"></div></div>
+            <div class="input-group"><label>H-Home GS|GA</label><div style="display:flex"><input type="text" id="h_h_gs" placeholder="0">|<input type="text" id="h_h_ga" placeholder="0"></div></div>
+            <div class="input-group"><label>A-Away GS|GA</label><div style="display:flex"><input type="text" id="a_a_gs" placeholder="0">|<input type="text" id="a_a_ga" placeholder="0"></div></div>
+            <div class="input-group"><label>H-Over GS|GA</label><div style="display:flex"><input type="text" id="h_o_gs" placeholder="0">|<input type="text" id="h_o_ga" placeholder="0"></div></div>
+            <div class="input-group"><label>A-Over GS|GA</label><div style="display:flex"><input type="text" id="a_o_gs" placeholder="0">|<input type="text" id="a_o_ga" placeholder="0"></div></div>
         </div>
         <button class="btn-push" onclick="calculateAndSave()">SAVE FIXTURE</button>
     </div>
@@ -90,6 +90,12 @@
         render();
     }
 
+    function solveMath(val) {
+        try {
+            return Function('"use strict"; return (' + val.replace(/[^-()\d/*+.]/g, '') + ')')() || 0;
+        } catch (e) { return 0; }
+    }
+
     function factorial(n) { return n <= 1 ? 1 : n * factorial(n - 1); }
     function poisson(k, lambda) { return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k); }
 
@@ -99,10 +105,10 @@
         const mDate = document.getElementById('match_date').value || new Date().toISOString().split('T')[0];
 
         const inpts = {
-            h_h_gs: parseFloat(document.getElementById('h_h_gs').value)||0, h_h_ga: parseFloat(document.getElementById('h_h_ga').value)||0,
-            a_a_gs: parseFloat(document.getElementById('a_a_gs').value)||0, a_a_ga: parseFloat(document.getElementById('a_a_ga').value)||0,
-            h_o_gs: parseFloat(document.getElementById('h_o_gs').value)||0, h_o_ga: parseFloat(document.getElementById('h_o_ga').value)||0,
-            a_o_gs: parseFloat(document.getElementById('a_o_gs').value)||0, a_o_ga: parseFloat(document.getElementById('a_o_ga').value)||0
+            h_h_gs: solveMath(document.getElementById('h_h_gs').value), h_h_ga: solveMath(document.getElementById('h_h_ga').value),
+            a_a_gs: solveMath(document.getElementById('a_a_gs').value), a_a_ga: solveMath(document.getElementById('a_a_ga').value),
+            h_o_gs: solveMath(document.getElementById('h_o_gs').value), h_o_ga: solveMath(document.getElementById('h_o_ga').value),
+            a_o_gs: solveMath(document.getElementById('a_o_gs').value), a_o_ga: solveMath(document.getElementById('a_o_ga').value)
         };
 
         const xgh = (((inpts.h_h_gs + inpts.a_a_ga)/12)*0.7) + (((inpts.h_o_gs + inpts.a_o_ga)/12)*0.3);
@@ -118,20 +124,46 @@
 
         const s1=Math.round(p1*100), sx=Math.round(px*100), s2=100-s1-sx, diff=Math.abs(s1-s2);
         const pwr = (inpts.h_h_gs - inpts.h_h_ga) + (inpts.h_o_gs - inpts.h_o_ga) - ((inpts.a_a_gs - inpts.a_a_ga) + (inpts.a_o_gs - inpts.a_o_ga));
+        
+        // 1. Goal Logic
+        const totalExp = xgh + xga;
+        const goalV = totalExp > 2.4 ? "O2.5" : "U2.5";
 
+        // 2. BTTS Logic
+        const probHScore = 1 - poisson(0, xgh);
+        const probAScore = 1 - poisson(0, xga);
+        const bttsProb = Math.round((probHScore * probAScore) * 100);
+        const bttsV = bttsProb > 52 ? "BTTS-Y" : "BTTS-N";
+
+        // 3. Risk Level Logic
+        let risk = "MEDIUM";
+        if (diff > 40 || (sx > 40)) risk = "LOW";
+        else if (diff < 15) risk = "HIGH";
+
+        // 4. Main Verdict Logic
         let v = "";
-        if(diff < 12) v = "DRAW RISK (X)";
+        if(diff < 12 && sx > 27) v = "DRAW RISK (X)";
+        else if(sx < 22 && diff < 25) v = "HOME/AWAY (12)";
         else if(s1 > s2) v = (diff > 32 && pwr > 2.5) ? "HOME WIN (1)" : "HOME DOUBLE (1X)";
         else v = (diff > 32 && pwr < -2.5) ? "AWAY WIN (2)" : "AWAY DOUBLE (X2)";
 
-        const data = { name: `${hName} vs ${aName}`, verdict: v, probs: `${s1}%|${sx}%|${s2}%`, date: mDate, inputs: inpts, score: "-", status: "pending" };
+        const fullVerdict = `${v} | ${goalV} | ${bttsV} | RISK: ${risk}`;
+
+        const data = { 
+            name: `${hName} vs ${aName}`, 
+            verdict: fullVerdict, 
+            probs: `${s1}%|${sx}%|${s2}%`, 
+            date: mDate, 
+            inputs: inpts, 
+            score: "-", 
+            status: "pending" 
+        };
 
         if(editId) { database.ref('matches/'+editId).update(data); editId = null; }
         else { database.ref('matches').push(data); }
         document.querySelectorAll('input').forEach(i => i.value = "");
     }
 
-    // --- REFINED STATUS ENGINE ---
     function updateScore(id) {
         if(!isAdmin) return;
         const res = prompt("Enter Score (e.g. 2-1):");
@@ -142,13 +174,12 @@
         const tip = m.verdict;
 
         let isWin = false;
-        
-        if (tip.includes("1X")) { if (h >= a) isWin = true; }
+        if (tip.includes("(12)")) { if (h !== a) isWin = true; }
+        else if (tip.includes("1X")) { if (h >= a) isWin = true; }
         else if (tip.includes("X2")) { if (a >= h) isWin = true; }
         else if (tip.includes("(1)")) { if (h > a) isWin = true; }
         else if (tip.includes("(2)")) { if (a > h) isWin = true; }
         else if (tip.includes("(X)")) { if (h === a) isWin = true; }
-        else if (tip.includes("12")) { if (h !== a) isWin = true; }
 
         database.ref('matches/'+id).update({ score: res, status: isWin ? "WON" : "LOST" });
     }
