@@ -42,7 +42,6 @@
         .status-won { color: var(--win); font-weight: 800; font-size: 11px; }
         .status-lost { color: var(--loss); font-weight: 800; font-size: 11px; }
         .crud-btns button { background: none; border: none; cursor: pointer; font-size: 16px; margin-left: 12px; }
-        
         #authBtn { border: 1px solid var(--accent); color: var(--accent); background: none; border-radius: 10px; padding: 5px 10px; cursor: pointer; font-weight: 600; }
     </style>
 </head>
@@ -75,7 +74,7 @@
             <div class="input-group"><label>H-Over GS|GA</label><div style="display:flex"><input type="text" id="h_o_gs" placeholder="0">|<input type="text" id="h_o_ga" placeholder="0"></div></div>
             <div class="input-group"><label>A-Over GS|GA</label><div style="display:flex"><input type="text" id="a_o_gs" placeholder="0">|<input type="text" id="a_o_ga" placeholder="0"></div></div>
         </div>
-        <button class="btn-push" onclick="calculateAndSave()">SAVE FIXTURE</button>
+        <button class="btn-push" id="saveBtn" onclick="calculateAndSave()">SAVE FIXTURE</button>
     </div>
 
     <div id="prediction-list"></div>
@@ -94,7 +93,7 @@
 
     let matches = [], currentFilter = 'today', selectedDate = '', isAdmin = false, editId = null;
 
-    // --- AUTH STATE ---
+    // --- AUTHENTICATION ---
     auth.onAuthStateChanged(user => {
         isAdmin = !!user;
         document.getElementById('authBtn').innerText = user ? "LOGOUT" : "ADMIN LOGIN";
@@ -108,12 +107,12 @@
             const email = prompt("Email:"), pass = prompt("Pass:");
             if(email && pass) {
                 try { await auth.signInWithEmailAndPassword(email, pass); } 
-                catch (e) { alert(e.message); }
+                catch (e) { alert("Auth Failed: " + e.message); }
             }
         }
     }
 
-    // --- CORE LOGIC ---
+    // --- FILTERING ---
     function setFilter(t) {
         currentFilter = t; selectedDate = '';
         document.getElementById('date-lookup').value = '';
@@ -129,6 +128,7 @@
         render();
     }
 
+    // --- ALGORITHM & DATABASE ---
     function solveMath(val) {
         try { return Function('"use strict"; return (' + val.replace(/[^-()\d/*+.]/g, '') + ')')() || 0; } 
         catch (e) { return 0; }
@@ -137,8 +137,11 @@
     function factorial(n) { return n <= 1 ? 1 : n * factorial(n - 1); }
     function poisson(k, lambda) { return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k); }
 
-    function calculateAndSave() {
-        if(!isAdmin) return;
+    async function calculateAndSave() {
+        if(!isAdmin) return alert("Please Login as Admin");
+        const btn = document.getElementById('saveBtn');
+        btn.innerText = "PROCESSING..."; btn.disabled = true;
+
         const hName = document.getElementById('home_team').value;
         const aName = document.getElementById('away_team').value;
         const mDate = document.getElementById('match_date').value || new Date().toISOString().split('T')[0];
@@ -164,29 +167,35 @@
         const s1=Math.round(p1*100), sx=Math.round(px*100), s2=Math.round(p2*100), diff=Math.abs(s1-s2);
         const pwr = (inpts.h_h_gs - inpts.h_h_ga) + (inpts.h_o_gs - inpts.h_o_ga) - ((inpts.a_a_gs - inpts.a_a_ga) + (inpts.a_o_gs - inpts.a_o_ga));
         
-        const goalV = (xgh + xga) > 2.4 ? "O2.5" : "U2.5";
-        const bttsV = ((1 - poisson(0, xgh)) * (1 - poisson(0, xga))) > 0.52 ? "BTTS-Y" : "BTTS-N";
+        const goalV = (xgh + xga) > 2.45 ? "O2.5" : "U2.5";
+        const bttsV = ((1 - poisson(0, xgh)) * (1 - poisson(0, xga))) > 0.54 ? "BTTS-Y" : "BTTS-N";
         
-        let risk = "MED"; if (diff > 40 || sx > 40) risk = "LOW"; else if (diff < 15) risk = "HIGH";
+        // REFINED ALGORITHM: Anti-"All Draw" Logic
+        let risk = "MED"; if (diff > 35) risk = "LOW"; else if (diff < 10) risk = "HIGH";
 
         let v = "";
-        if(diff < 12 && sx > 27) v = "DRAW (X)";
-        else if(sx < 22 && diff < 25) v = "H/A (12)";
-        else if(s1 > s2) v = (diff > 32 && pwr > 2.5) ? "WIN (1)" : "1X";
-        else v = (diff > 32 && pwr < -2.5) ? "WIN (2)" : "X2";
+        if (sx > 33 && diff < 8) { v = "DRAW (X)"; }
+        else if (s2 > s1) { v = (pwr > 0.5) ? "WIN (1)" : (pwr > -0.5 ? "1X" : "X2"); }
+        else if (s1 > s2) { v = (diff > 25 || pwr > 1.8) ? "WIN (1)" : "1X"; }
+        else { v = "1X"; }
 
         const data = { name: `${hName} vs ${aName}`, verdict: `${v} | ${goalV} | ${bttsV} | ${risk}`, probs: `${s1}%|${sx}%|${s2}%`, date: mDate, inputs: inpts, score: "-", status: "pending" };
 
-        if(editId) { database.ref('matches/'+editId).update(data); editId = null; }
-        else { database.ref('matches').push(data); }
-        document.querySelectorAll('#admin-form input').forEach(i => i.value = "");
+        try {
+            if(editId) { await database.ref('matches/'+editId).update(data); editId = null; }
+            else { await database.ref('matches').push(data); }
+            document.querySelectorAll('#admin-form input').forEach(i => i.value = "");
+            alert("Saved Successfully!");
+        } catch(e) {
+            console.error(e);
+            alert("PERMISSION DENIED: Check your UID in Firebase Rules.");
+        } finally {
+            btn.innerText = "SAVE FIXTURE"; btn.disabled = false;
+        }
     }
 
-    // --- RENDER WITH SERVER-SIDE FILTERING ---
     function render() {
         const list = document.getElementById('prediction-list');
-        list.innerHTML = "";
-        
         let target = selectedDate;
         if (!target) {
             const d = new Date();
@@ -195,7 +204,6 @@
             target = d.toISOString().split('T')[0];
         }
 
-        // Optimized Query using .indexOn(["date"])
         database.ref('matches').orderByChild('date').equalTo(target).on('value', snap => {
             list.innerHTML = "";
             if(!snap.exists()) {
@@ -224,7 +232,7 @@
 
     function updateScore(id) {
         if(!isAdmin) return;
-        const res = prompt("Score (2-1):"); if(!res || !res.includes("-")) return;
+        const res = prompt("Score (e.g. 2-1):"); if(!res || !res.includes("-")) return;
         database.ref('matches/'+id).once('value', s => {
             const m = s.val(), [h,a] = res.split('-').map(Number), tip = m.verdict;
             let win = (tip.includes("(12)") && h!=a) || (tip.includes("1X") && h>=a) || (tip.includes("X2") && a>=h) || (tip.includes("(1)") && h>a) || (tip.includes("(2)") && a>h) || (tip.includes("(X)") && h==a);
