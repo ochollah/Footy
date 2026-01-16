@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     
     <style>
         :root {
@@ -41,6 +42,8 @@
         .status-won { color: var(--win); font-weight: 800; font-size: 11px; }
         .status-lost { color: var(--loss); font-weight: 800; font-size: 11px; }
         .crud-btns button { background: none; border: none; cursor: pointer; font-size: 16px; margin-left: 12px; }
+        
+        #authBtn { border: 1px solid var(--accent); color: var(--accent); background: none; border-radius: 10px; padding: 5px 10px; cursor: pointer; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -48,7 +51,7 @@
 <div class="container">
     <header>
         <div class="logo">PRO<span>PREDICT</span></div>
-        <button onclick="toggleAdmin()" id="adminBtn" style="background:none; border:1px solid var(--accent); color:var(--accent); border-radius:10px; padding:5px 10px; cursor:pointer;">ADMIN</button>
+        <button onclick="handleAuth()" id="authBtn">ADMIN LOGIN</button>
     </header>
 
     <div class="search-row">
@@ -79,22 +82,40 @@
 </div>
 
 <script>
-    const firebaseConfig = { databaseURL: "https://footy-923c0-default-rtdb.firebaseio.com" };
+    const firebaseConfig = { 
+        apiKey: "AIzaSyAkrzGA_JmsQmCClVMXHd7B6jzGVDq7rME", 
+        authDomain: "footy-923c0.firebaseapp.com",
+        databaseURL: "https://footy-923c0-default-rtdb.firebaseio.com" 
+    };
+    
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
+    const auth = firebase.auth();
 
     let matches = [], currentFilter = 'today', selectedDate = '', isAdmin = false, editId = null;
 
-    function toggleAdmin() {
-        if (!isAdmin) { if (prompt("Key:") === "1234") isAdmin = true; } 
-        else isAdmin = false;
-        document.getElementById('admin-form').style.display = isAdmin ? 'block' : 'none';
+    // --- AUTH STATE ---
+    auth.onAuthStateChanged(user => {
+        isAdmin = !!user;
+        document.getElementById('authBtn').innerText = user ? "LOGOUT" : "ADMIN LOGIN";
+        document.getElementById('admin-form').style.display = user ? 'block' : 'none';
         render();
+    });
+
+    async function handleAuth() {
+        if (auth.currentUser) { auth.signOut(); } 
+        else {
+            const email = prompt("Email:"), pass = prompt("Pass:");
+            if(email && pass) {
+                try { await auth.signInWithEmailAndPassword(email, pass); } 
+                catch (e) { alert(e.message); }
+            }
+        }
     }
 
+    // --- CORE LOGIC ---
     function setFilter(t) {
-        currentFilter = t;
-        selectedDate = ''; // Reset date search when tabs are clicked
+        currentFilter = t; selectedDate = '';
         document.getElementById('date-lookup').value = '';
         document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
         document.getElementById('tab-'+t).classList.add('active');
@@ -103,22 +124,21 @@
 
     function searchByDate(dateVal) {
         if(!dateVal) return;
-        selectedDate = dateVal;
-        currentFilter = 'custom';
+        selectedDate = dateVal; currentFilter = 'custom';
         document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
         render();
     }
 
     function solveMath(val) {
-        try {
-            return Function('"use strict"; return (' + val.replace(/[^-()\d/*+.]/g, '') + ')')() || 0;
-        } catch (e) { return 0; }
+        try { return Function('"use strict"; return (' + val.replace(/[^-()\d/*+.]/g, '') + ')')() || 0; } 
+        catch (e) { return 0; }
     }
 
     function factorial(n) { return n <= 1 ? 1 : n * factorial(n - 1); }
     function poisson(k, lambda) { return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k); }
 
     function calculateAndSave() {
+        if(!isAdmin) return;
         const hName = document.getElementById('home_team').value;
         const aName = document.getElementById('away_team').value;
         const mDate = document.getElementById('match_date').value || new Date().toISOString().split('T')[0];
@@ -141,14 +161,13 @@
             }
         }
 
-        const s1=Math.round(p1*100), sx=Math.round(px*100), s2=100-s1-sx, diff=Math.abs(s1-s2);
+        const s1=Math.round(p1*100), sx=Math.round(px*100), s2=Math.round(p2*100), diff=Math.abs(s1-s2);
         const pwr = (inpts.h_h_gs - inpts.h_h_ga) + (inpts.h_o_gs - inpts.h_o_ga) - ((inpts.a_a_gs - inpts.a_a_ga) + (inpts.a_o_gs - inpts.a_o_ga));
         
         const goalV = (xgh + xga) > 2.4 ? "O2.5" : "U2.5";
         const bttsV = ((1 - poisson(0, xgh)) * (1 - poisson(0, xga))) > 0.52 ? "BTTS-Y" : "BTTS-N";
         
-        let risk = "MED";
-        if (diff > 40 || sx > 40) risk = "LOW"; else if (diff < 15) risk = "HIGH";
+        let risk = "MED"; if (diff > 40 || sx > 40) risk = "LOW"; else if (diff < 15) risk = "HIGH";
 
         let v = "";
         if(diff < 12 && sx > 27) v = "DRAW (X)";
@@ -156,82 +175,72 @@
         else if(s1 > s2) v = (diff > 32 && pwr > 2.5) ? "WIN (1)" : "1X";
         else v = (diff > 32 && pwr < -2.5) ? "WIN (2)" : "X2";
 
-        const fullVerdict = `${v} | ${goalV} | ${bttsV} | ${risk}`;
-
-        const data = { name: `${hName} vs ${aName}`, verdict: fullVerdict, probs: `${s1}%|${sx}%|${s2}%`, date: mDate, inputs: inpts, score: "-", status: "pending" };
+        const data = { name: `${hName} vs ${aName}`, verdict: `${v} | ${goalV} | ${bttsV} | ${risk}`, probs: `${s1}%|${sx}%|${s2}%`, date: mDate, inputs: inpts, score: "-", status: "pending" };
 
         if(editId) { database.ref('matches/'+editId).update(data); editId = null; }
         else { database.ref('matches').push(data); }
         document.querySelectorAll('#admin-form input').forEach(i => i.value = "");
     }
 
-    function updateScore(id) {
-        if(!isAdmin) return;
-        const res = prompt("Enter Score (e.g. 2-1):");
-        if(!res || !res.includes("-")) return;
-        const [h, a] = res.split('-').map(Number);
-        const m = matches.find(x => x.id === id);
-        const tip = m.verdict;
-        let isWin = false;
-        if (tip.includes("(12)")) isWin = h !== a;
-        else if (tip.includes("1X")) isWin = h >= a;
-        else if (tip.includes("X2")) isWin = a >= h;
-        else if (tip.includes("(1)")) isWin = h > a;
-        else if (tip.includes("(2)")) isWin = a > h;
-        else if (tip.includes("(X)")) isWin = h === a;
-        database.ref('matches/'+id).update({ score: res, status: isWin ? "WON" : "LOST" });
-    }
-
-    database.ref('matches').on('value', snap => {
-        matches = []; snap.forEach(c => { matches.push({ id: c.key, ...c.val() }); });
-        render();
-    });
-
-    function deleteMatch(id) { if(confirm("Delete?")) database.ref('matches/'+id).remove(); }
-    function editMatch(id) {
-        const m = matches.find(x => x.id === id);
-        editId = id;
-        document.getElementById('home_team').value = m.name.split(' vs ')[0];
-        document.getElementById('away_team').value = m.name.split(' vs ')[1];
-        document.getElementById('match_date').value = m.date;
-        for(let key in m.inputs) document.getElementById(key).value = m.inputs[key];
-        document.getElementById('admin-form').style.display = 'block';
-        window.scrollTo(0,0);
-    }
-
+    // --- RENDER WITH SERVER-SIDE FILTERING ---
     function render() {
-        const list = document.getElementById('prediction-list'); list.innerHTML = "";
-        let target = selectedDate;
+        const list = document.getElementById('prediction-list');
+        list.innerHTML = "";
         
+        let target = selectedDate;
         if (!target) {
             const d = new Date();
             if(currentFilter === 'yesterday') d.setDate(d.getDate() - 1);
             if(currentFilter === 'tomorrow') d.setDate(d.getDate() + 1);
             target = d.toISOString().split('T')[0];
         }
-        
-        const filtered = matches.filter(m => m.date === target);
-        if(filtered.length === 0) {
-            list.innerHTML = `<div style="text-align:center; color:var(--text-dim); margin-top:50px; font-size:13px;">No predictions found for ${target}</div>`;
-            return;
-        }
 
-        filtered.forEach(m => {
-            const sClass = m.status === 'WON' ? 'status-won' : (m.status === 'LOST' ? 'status-lost' : '');
-            list.innerHTML += `
-                <div class="match-card">
-                    <div class="card-header">
-                        <div style="font-weight:700; font-size:14px;">${m.name}</div>
-                        <div class="tip-badge">${m.verdict}</div>
-                    </div>
-                    <div style="font-size:11px; color:var(--text-dim)">Probabilities: ${m.probs}</div>
-                    <div class="card-actions">
-                        <div class="score-box" onclick="updateScore('${m.id}')" style="color:${m.status==='WON'?'var(--win)':m.status==='LOST'?'var(--loss)':'white'}">${m.score}</div>
-                        <div class="${sClass}">${m.status}</div>
-                        ${isAdmin ? `<div class="crud-btns"><button onclick="editMatch('${m.id}')">✎</button><button onclick="deleteMatch('${m.id}')" style="color:var(--loss)">✕</button></div>` : ''}
-                    </div>
-                </div>
-            `;
+        // Optimized Query using .indexOn(["date"])
+        database.ref('matches').orderByChild('date').equalTo(target).on('value', snap => {
+            list.innerHTML = "";
+            if(!snap.exists()) {
+                list.innerHTML = `<div style="text-align:center; color:var(--text-dim); margin-top:50px;">No predictions for ${target}</div>`;
+                return;
+            }
+            snap.forEach(c => {
+                const m = { id: c.key, ...c.val() };
+                const sClass = m.status === 'WON' ? 'status-won' : (m.status === 'LOST' ? 'status-lost' : '');
+                list.innerHTML += `
+                    <div class="match-card">
+                        <div class="card-header">
+                            <div style="font-weight:700; font-size:14px;">${m.name}</div>
+                            <div class="tip-badge">${m.verdict}</div>
+                        </div>
+                        <div style="font-size:11px; color:var(--text-dim)">Probabilities: ${m.probs}</div>
+                        <div class="card-actions">
+                            <div class="score-box" onclick="updateScore('${m.id}')" style="color:${m.status==='WON'?'var(--win)':m.status==='LOST'?'var(--loss)':'white'}">${m.score}</div>
+                            <div class="${sClass}">${m.status}</div>
+                            ${isAdmin ? `<div class="crud-btns"><button onclick="editMatch('${m.id}')">✎</button><button onclick="deleteMatch('${m.id}')" style="color:var(--loss)">✕</button></div>` : ''}
+                        </div>
+                    </div>`;
+            });
+        });
+    }
+
+    function updateScore(id) {
+        if(!isAdmin) return;
+        const res = prompt("Score (2-1):"); if(!res || !res.includes("-")) return;
+        database.ref('matches/'+id).once('value', s => {
+            const m = s.val(), [h,a] = res.split('-').map(Number), tip = m.verdict;
+            let win = (tip.includes("(12)") && h!=a) || (tip.includes("1X") && h>=a) || (tip.includes("X2") && a>=h) || (tip.includes("(1)") && h>a) || (tip.includes("(2)") && a>h) || (tip.includes("(X)") && h==a);
+            database.ref('matches/'+id).update({ score: res, status: win ? "WON" : "LOST" });
+        });
+    }
+
+    function deleteMatch(id) { if(isAdmin && confirm("Delete?")) database.ref('matches/'+id).remove(); }
+    function editMatch(id) {
+        database.ref('matches/'+id).once('value', s => {
+            const m = s.val(); editId = id;
+            document.getElementById('home_team').value = m.name.split(' vs ')[0];
+            document.getElementById('away_team').value = m.name.split(' vs ')[1];
+            document.getElementById('match_date').value = m.date;
+            for(let key in m.inputs) document.getElementById(key).value = m.inputs[key];
+            window.scrollTo(0,0);
         });
     }
 
