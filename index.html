@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ProPredict | Professional Suite</title>
+    <title>ProPredict | Advanced Intelligence Suite</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -14,7 +14,7 @@
             --bg: #0b0f1a; --card-bg: #161c2d; --accent: #00f2ff;
             --win: #00ff88; --loss: #ff3e60; --text-dim: #94a3b8; --border: rgba(255, 255, 255, 0.05);
         }
-        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: white; margin: 0; padding: 15px; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: white; margin: 0; padding: 15px; scroll-behavior: smooth; }
         .container { max-width: 600px; margin: auto; }
         header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 20px; }
         .logo { font-size: 22px; font-weight: 800; }
@@ -30,13 +30,19 @@
         .matrix { background: var(--card-bg); padding: 20px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; display: none; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .input-group { background: rgba(0,0,0,0.2); padding: 8px; border-radius: 10px; margin-bottom: 10px; }
-        .input-group label { font-size: 9px; color: var(--text-dim); display: block; }
+        .input-group label { font-size: 9px; color: var(--text-dim); display: block; font-weight: 600; margin-bottom: 2px; }
         input { width: 100%; background: transparent; border: none; color: white; font-weight: 600; outline: none; }
         
-        .btn-push { width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--accent); color: #000; font-weight: 800; cursor: pointer; }
+        .btn-push { width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--accent); color: #000; font-weight: 800; cursor: pointer; transition: 0.2s; }
+        .btn-api { background: #1e293b; color: var(--accent); border: 1px solid var(--accent); margin-bottom: 15px; font-size: 11px; padding: 10px; }
+        .btn-cancel { background: transparent; border: 1px solid var(--loss); color: var(--loss); margin-top: 10px; display: none; }
+
         .match-card { background: var(--card-bg); border-radius: 18px; padding: 15px; margin-bottom: 12px; border: 1px solid var(--border); }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .tip-badge { background: rgba(0,242,255,0.1); color: var(--accent); padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 800; }
+        .tip-badge { background: rgba(0,242,255,0.1); color: var(--accent); padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; }
+        .xg-info { font-size: 10px; color: var(--text-dim); margin: 5px 0; }
+        .xg-info b { color: var(--accent); }
+        
         .card-actions { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 12px; margin-top: 10px; }
         .score-box { background: #000; padding: 5px 15px; border-radius: 10px; font-weight: 800; cursor: pointer; border: 1px solid var(--border); }
         .status-won { color: var(--win); font-weight: 800; font-size: 11px; }
@@ -63,18 +69,26 @@
     </div>
 
     <div class="matrix" id="admin-form">
+        <button class="btn-push btn-api" id="apiBtn" onclick="fetchISportsFixtures()">⚡ FETCH ISPORTS FIXTURES</button>
+        
         <input type="date" id="match_date" style="margin-bottom:15px; background:rgba(0,0,0,0.5); padding:10px; border-radius:8px; border:1px solid var(--border); color:white; width: 93%;">
+        
         <div class="grid">
-            <div class="input-group"><label>Home Team</label><input type="text" id="home_team"></div>
-            <div class="input-group"><label>Away Team</label><input type="text" id="away_team"></div>
+            <div class="input-group"><label>Home Team</label><input type="text" id="home_team" placeholder="Team A"></div>
+            <div class="input-group"><label>Away Team</label><input type="text" id="away_team" placeholder="Team B"></div>
         </div>
+        
+        <p style="font-size: 10px; color: var(--accent); margin-bottom: 5px;">Input Total Goals (Last 6 H/A | Last 8 Overall)</p>
+        
         <div class="grid">
-            <div class="input-group"><label>H-Home GS|GA</label><div style="display:flex"><input type="text" id="h_h_gs" placeholder="0">|<input type="text" id="h_h_ga" placeholder="0"></div></div>
-            <div class="input-group"><label>A-Away GS|GA</label><div style="display:flex"><input type="text" id="a_a_gs" placeholder="0">|<input type="text" id="a_a_ga" placeholder="0"></div></div>
-            <div class="input-group"><label>H-Over GS|GA</label><div style="display:flex"><input type="text" id="h_o_gs" placeholder="0">|<input type="text" id="h_o_ga" placeholder="0"></div></div>
-            <div class="input-group"><label>A-Over GS|GA</label><div style="display:flex"><input type="text" id="a_o_gs" placeholder="0">|<input type="text" id="a_o_ga" placeholder="0"></div></div>
+            <div class="input-group"><label>H-Home (L6) GS|GA</label><div style="display:flex"><input type="text" id="h_h_gs" placeholder="0">|<input type="text" id="h_h_ga" placeholder="0"></div></div>
+            <div class="input-group"><label>A-Away (L6) GS|GA</label><div style="display:flex"><input type="text" id="a_a_gs" placeholder="0">|<input type="text" id="a_a_ga" placeholder="0"></div></div>
+            <div class="input-group"><label>H-Overall (L8) GS|GA</label><div style="display:flex"><input type="text" id="h_o_gs" placeholder="0">|<input type="text" id="h_o_ga" placeholder="0"></div></div>
+            <div class="input-group"><label>A-Overall (L8) GS|GA</label><div style="display:flex"><input type="text" id="a_o_gs" placeholder="0">|<input type="text" id="a_o_ga" placeholder="0"></div></div>
         </div>
-        <button class="btn-push" id="saveBtn" onclick="calculateAndSave()">SAVE FIXTURE</button>
+        
+        <button class="btn-push" id="saveBtn" onclick="calculateAndSave()">GENERATE xG & SAVE</button>
+        <button class="btn-push btn-cancel" id="cancelBtn" onclick="cancelEdit()">CANCEL EDIT</button>
     </div>
 
     <div id="prediction-list"></div>
@@ -90,10 +104,29 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
     const auth = firebase.auth();
+    const API_KEY = "J9TWYMroNlk17mVA";
 
-    let matches = [], currentFilter = 'today', selectedDate = '', isAdmin = false, editId = null;
+    let currentFilter = 'today', selectedDate = '', isAdmin = false, editId = null;
 
-    // --- AUTHENTICATION ---
+    // --- API LOGIC ---
+    async function fetchISportsFixtures() {
+        const apiBtn = document.getElementById('apiBtn');
+        apiBtn.innerText = "FETCHING...";
+        const url = `https://corsproxy.io/?` + encodeURIComponent(`https://api.isportsapi.com/sport/football/schedule?api_key=${API_KEY}`);
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.code === 0 && data.data.length > 0) {
+                const match = data.data[Math.floor(Math.random() * data.data.length)];
+                document.getElementById('home_team').value = match.homeName;
+                document.getElementById('away_team').value = match.awayName;
+                if(match.matchTime) document.getElementById('match_date').value = new Date(match.matchTime * 1000).toISOString().split('T')[0];
+            }
+        } catch (e) { console.log("API Error"); }
+        finally { apiBtn.innerText = "⚡ FETCH ISPORTS FIXTURES"; }
+    }
+
+    // --- AUTH ---
     auth.onAuthStateChanged(user => {
         isAdmin = !!user;
         document.getElementById('authBtn').innerText = user ? "LOGOUT" : "ADMIN LOGIN";
@@ -105,99 +138,115 @@
         if (auth.currentUser) { auth.signOut(); } 
         else {
             const email = prompt("Email:"), pass = prompt("Pass:");
-            if(email && pass) {
-                try { await auth.signInWithEmailAndPassword(email, pass); } 
-                catch (e) { alert("Auth Failed: " + e.message); }
-            }
+            if(email && pass) try { await auth.signInWithEmailAndPassword(email, pass); } catch (e) { alert("Login Failed"); }
         }
     }
 
-    // --- FILTERING ---
-    function setFilter(t) {
-        currentFilter = t; selectedDate = '';
-        document.getElementById('date-lookup').value = '';
-        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-        document.getElementById('tab-'+t).classList.add('active');
-        render();
-    }
-
-    function searchByDate(dateVal) {
-        if(!dateVal) return;
-        selectedDate = dateVal; currentFilter = 'custom';
-        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-        render();
-    }
-
-    // --- ALGORITHM & DATABASE ---
-    function solveMath(val) {
-        try { return Function('"use strict"; return (' + val.replace(/[^-()\d/*+.]/g, '') + ')')() || 0; } 
-        catch (e) { return 0; }
-    }
-
+    // --- MATH & ALGORITHM ---
+    function solveMath(val) { try { return Function('"use strict"; return (' + String(val).replace(/[^-()\d/*+.]/g, '') + ')')() || 0; } catch (e) { return 0; } }
     function factorial(n) { return n <= 1 ? 1 : n * factorial(n - 1); }
     function poisson(k, lambda) { return (Math.pow(lambda, k) * Math.exp(-lambda)) / factorial(k); }
 
     async function calculateAndSave() {
-        if(!isAdmin) return alert("Please Login as Admin");
+        if(!isAdmin) return;
         const btn = document.getElementById('saveBtn');
-        btn.innerText = "PROCESSING..."; btn.disabled = true;
+        btn.innerText = "MANIPULATING xG..."; btn.disabled = true;
 
         const hName = document.getElementById('home_team').value;
         const aName = document.getElementById('away_team').value;
-        const mDate = document.getElementById('match_date').value || new Date().toISOString().split('T')[0];
+        const mDate = document.getElementById('match_date').value;
 
-        const inpts = {
+        // RAW INPUTS (Total Goals)
+        const raw = {
             h_h_gs: solveMath(document.getElementById('h_h_gs').value), h_h_ga: solveMath(document.getElementById('h_h_ga').value),
             a_a_gs: solveMath(document.getElementById('a_a_gs').value), a_a_ga: solveMath(document.getElementById('a_a_ga').value),
             h_o_gs: solveMath(document.getElementById('h_o_gs').value), h_o_ga: solveMath(document.getElementById('h_o_ga').value),
             a_o_gs: solveMath(document.getElementById('a_o_gs').value), a_o_ga: solveMath(document.getElementById('a_o_ga').value)
         };
 
-        const xgh = (((inpts.h_h_gs + inpts.a_a_ga)/12)*0.7) + (((inpts.h_o_gs + inpts.a_o_ga)/12)*0.3);
-        const xga = (((inpts.a_a_gs + inpts.h_h_ga)/12)*0.7) + (((inpts.a_o_gs + inpts.h_o_ga)/12)*0.3);
+        // STEP 1: CALCULATE AVERAGES (Last 6 H/A vs Last 8 Overall)
+        const avg_h_h_gs = raw.h_h_gs / 6; const avg_h_h_ga = raw.h_h_ga / 6;
+        const avg_a_a_gs = raw.a_a_gs / 6; const avg_a_a_ga = raw.a_a_ga / 6;
+        const avg_h_o_gs = raw.h_o_gs / 8; const avg_h_o_ga = raw.h_o_ga / 8;
+        const avg_a_o_gs = raw.a_o_gs / 8; const avg_a_o_ga = raw.a_o_ga / 8;
 
+        // STEP 2: RELATIVE STRENGTH xG CALCULATION (Weight 70/30)
+        const league_avg = 1.35;
+        
+        // Home xGS: Home Attack Strength vs Away Defensive Weakness
+        const h_attack = ((avg_h_h_gs * 0.7) + (avg_h_o_gs * 0.3)) / league_avg;
+        const a_defense = ((avg_a_a_ga * 0.7) + (avg_a_o_ga * 0.3)) / league_avg;
+        const xGS_Home = h_attack * a_defense * league_avg;
+
+        // Away xGS: Away Attack Strength vs Home Defensive Weakness
+        const a_attack = ((avg_a_a_gs * 0.7) + (avg_a_o_gs * 0.3)) / league_avg;
+        const h_defense = ((avg_h_h_ga * 0.7) + (avg_h_o_ga * 0.3)) / league_avg;
+        const xGS_Away = a_attack * h_defense * league_avg;
+
+        // STEP 3: PROBABILITIES
         let p1=0, px=0, p2=0;
         for(let h=0; h<=6; h++) {
             for(let a=0; a<=6; a++) {
-                let prob = poisson(h, xgh) * poisson(a, xga);
-                if(h>a) p1+=prob; else if(h===a) px+=prob; else p2+=prob;
+                let p = poisson(h, xGS_Home) * poisson(a, xGS_Away);
+                if(h>a) p1+=p; else if(h===a) px+=p; else p2+=p;
             }
         }
 
         const s1=Math.round(p1*100), sx=Math.round(px*100), s2=Math.round(p2*100), diff=Math.abs(s1-s2);
-        const pwr = (inpts.h_h_gs - inpts.h_h_ga) + (inpts.h_o_gs - inpts.h_o_ga) - ((inpts.a_a_gs - inpts.a_a_ga) + (inpts.a_o_gs - inpts.a_o_ga));
         
-        const goalV = (xgh + xga) > 2.45 ? "O2.5" : "U2.5";
-        const bttsV = ((1 - poisson(0, xgh)) * (1 - poisson(0, xga))) > 0.54 ? "BTTS-Y" : "BTTS-N";
-        
-        // REFINED ALGORITHM: Anti-"All Draw" Logic
-        let risk = "MED"; if (diff > 35) risk = "LOW"; else if (diff < 10) risk = "HIGH";
-
+        // CONSERVATIVE VERDICT LOGIC
         let v = "";
-        if (sx > 33 && diff < 8) { v = "DRAW (X)"; }
-        else if (s2 > s1) { v = (pwr > 0.5) ? "WIN (1)" : (pwr > -0.5 ? "1X" : "X2"); }
-        else if (s1 > s2) { v = (diff > 25 || pwr > 1.8) ? "WIN (1)" : "1X"; }
-        else { v = "1X"; }
+        if (s1 > 58) v = "WIN (1)";
+        else if (s2 > 58) v = "WIN (2)";
+        else if (s1 > 42 && diff > 10) v = "1X";
+        else if (s2 > 42 && diff > 10) v = "X2";
+        else if (sx > 32 || diff < 8) v = "DRAW (X)";
+        else v = "12 (No Draw)";
 
-        const data = { name: `${hName} vs ${aName}`, verdict: `${v} | ${goalV} | ${bttsV} | ${risk}`, probs: `${s1}%|${sx}%|${s2}%`, date: mDate, inputs: inpts, score: "-", status: "pending" };
+        const goalV = (xGS_Home + xGS_Away) > 2.55 ? "O2.5" : ((xGS_Home + xGS_Away) < 1.9 ? "U2.5" : "O1.5");
+        const bttsV = (xGS_Home > 0.88 && xGS_Away > 0.88) ? "BTTS-Y" : "BTTS-N";
+
+        const data = { 
+            name: `${hName} vs ${aName}`, verdict: `${v} | ${goalV} | ${bttsV}`, 
+            probs: `${s1}%|${sx}%|${s2}%`, date: mDate, 
+            inputs: raw, xGS: xGS_Home.toFixed(2), xGA: xGS_Away.toFixed(2),
+            score: "-", status: "pending" 
+        };
 
         try {
             if(editId) { await database.ref('matches/'+editId).update(data); editId = null; }
             else { await database.ref('matches').push(data); }
-            document.querySelectorAll('#admin-form input').forEach(i => i.value = "");
-            alert("Saved Successfully!");
-        } catch(e) {
-            console.error(e);
-            alert("PERMISSION DENIED: Check your UID in Firebase Rules.");
-        } finally {
-            btn.innerText = "SAVE FIXTURE"; btn.disabled = false;
-        }
+            clearForm();
+            document.getElementById('cancelBtn').style.display = 'none';
+        } catch(e) { alert("Error Saving"); }
+        finally { btn.innerText = "GENERATE xG & SAVE"; btn.disabled = false; render(); }
     }
+
+    // --- UI HELPERS ---
+    function setFilter(t) { currentFilter = t; selectedDate = ''; document.querySelectorAll('.tab').forEach(el => el.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); render(); }
+    function searchByDate(d) { selectedDate = d; currentFilter = 'custom'; render(); }
+
+    function editMatch(id) {
+        database.ref('matches/'+id).once('value', s => {
+            const m = s.val(); editId = id;
+            document.getElementById('saveBtn').innerText = "UPDATE FIXTURE";
+            document.getElementById('cancelBtn').style.display = 'block';
+            document.getElementById('home_team').value = m.name.split(' vs ')[0];
+            document.getElementById('away_team').value = m.name.split(' vs ')[1];
+            document.getElementById('match_date').value = m.date;
+            for(let k in m.inputs) document.getElementById(k).value = m.inputs[k];
+            window.scrollTo(0,0);
+        });
+    }
+
+    function clearForm() { document.querySelectorAll('#admin-form input').forEach(i => i.value = ""); }
+    function cancelEdit() { editId = null; clearForm(); document.getElementById('cancelBtn').style.display = 'none'; document.getElementById('saveBtn').innerText = "GENERATE xG & SAVE"; }
+    function deleteMatch(id) { if(isAdmin && confirm("Delete?")) database.ref('matches/'+id).remove(); }
 
     function render() {
         const list = document.getElementById('prediction-list');
-        let target = selectedDate;
-        if (!target) {
+        let target = selectedDate || new Date().toISOString().split('T')[0];
+        if (!selectedDate) {
             const d = new Date();
             if(currentFilter === 'yesterday') d.setDate(d.getDate() - 1);
             if(currentFilter === 'tomorrow') d.setDate(d.getDate() + 1);
@@ -206,23 +255,20 @@
 
         database.ref('matches').orderByChild('date').equalTo(target).on('value', snap => {
             list.innerHTML = "";
-            if(!snap.exists()) {
-                list.innerHTML = `<div style="text-align:center; color:var(--text-dim); margin-top:50px;">No predictions for ${target}</div>`;
-                return;
-            }
+            if(!snap.exists()) { list.innerHTML = `<div style="text-align:center; color:var(--text-dim); margin-top:50px;">No fixtures for ${target}</div>`; return; }
             snap.forEach(c => {
                 const m = { id: c.key, ...c.val() };
-                const sClass = m.status === 'WON' ? 'status-won' : (m.status === 'LOST' ? 'status-lost' : '');
+                const sCls = m.status === 'WON' ? 'status-won' : (m.status === 'LOST' ? 'status-lost' : '');
                 list.innerHTML += `
                     <div class="match-card">
                         <div class="card-header">
                             <div style="font-weight:700; font-size:14px;">${m.name}</div>
                             <div class="tip-badge">${m.verdict}</div>
                         </div>
-                        <div style="font-size:11px; color:var(--text-dim)">Probabilities: ${m.probs}</div>
+                        <div class="xg-info">xGS: <b>${m.xGS}</b> | xGA: <b>${m.xGA}</b> | Prob: ${m.probs}</div>
                         <div class="card-actions">
                             <div class="score-box" onclick="updateScore('${m.id}')" style="color:${m.status==='WON'?'var(--win)':m.status==='LOST'?'var(--loss)':'white'}">${m.score}</div>
-                            <div class="${sClass}">${m.status}</div>
+                            <div class="${sCls}">${m.status}</div>
                             ${isAdmin ? `<div class="crud-btns"><button onclick="editMatch('${m.id}')">✎</button><button onclick="deleteMatch('${m.id}')" style="color:var(--loss)">✕</button></div>` : ''}
                         </div>
                     </div>`;
@@ -232,23 +278,11 @@
 
     function updateScore(id) {
         if(!isAdmin) return;
-        const res = prompt("Score (e.g. 2-1):"); if(!res || !res.includes("-")) return;
+        const res = prompt("Score (2-1):"); if(!res || !res.includes("-")) return;
         database.ref('matches/'+id).once('value', s => {
             const m = s.val(), [h,a] = res.split('-').map(Number), tip = m.verdict;
-            let win = (tip.includes("(12)") && h!=a) || (tip.includes("1X") && h>=a) || (tip.includes("X2") && a>=h) || (tip.includes("(1)") && h>a) || (tip.includes("(2)") && a>h) || (tip.includes("(X)") && h==a);
+            let win = (tip.includes("1X") && h>=a) || (tip.includes("X2") && a>=h) || (tip.includes("(1)") && h>a) || (tip.includes("(2)") && a>h) || (tip.includes("(X)") && h==a) || (tip.includes("12") && h!=a);
             database.ref('matches/'+id).update({ score: res, status: win ? "WON" : "LOST" });
-        });
-    }
-
-    function deleteMatch(id) { if(isAdmin && confirm("Delete?")) database.ref('matches/'+id).remove(); }
-    function editMatch(id) {
-        database.ref('matches/'+id).once('value', s => {
-            const m = s.val(); editId = id;
-            document.getElementById('home_team').value = m.name.split(' vs ')[0];
-            document.getElementById('away_team').value = m.name.split(' vs ')[1];
-            document.getElementById('match_date').value = m.date;
-            for(let key in m.inputs) document.getElementById(key).value = m.inputs[key];
-            window.scrollTo(0,0);
         });
     }
 
