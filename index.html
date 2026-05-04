@@ -7,47 +7,36 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
 
     <style>
         :root { --primary:#0f172a; --accent:#2563eb; --win:#10b981; --loss:#ef4444; --bg:#f1f5f9; }
-        body { font-family: 'Segoe UI', system-ui; background:var(--bg); margin:0; padding:0; overflow-x: hidden; }
-        
-        /* Responsive Navigation */
-        .nav { background:var(--primary); color:white; padding:1rem; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap: 10px; sticky: top; z-index: 100; }
-        .nav h1 { margin:0; font-size: 1.2rem; }
-        
+        body { font-family: 'Segoe UI', system-ui; background:var(--bg); margin:0; padding:0; }
+        .nav { background:var(--primary); color:white; padding:1rem; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap: 10px; position: sticky; top: 0; z-index: 100; }
         .container { max-width:1200px; margin:auto; padding:15px; box-sizing: border-box; }
-
-        /* Dashboard Grid - Stacks on Mobile */
-        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-        @media (min-width: 992px) { .dashboard-grid { grid-template-columns: 400px 1fr; } }
-
-        .card { background:white; border-radius:12px; padding:20px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         
-        /* Input Styling */
-        input, select { width:100%; padding:10px; margin:5px 0; border:1px solid #cbd5e1; border-radius:6px; box-sizing: border-box; }
+        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 992px) { .dashboard-grid { grid-template-columns: 380px 1fr; } }
+
+        .card { background:white; border-radius:12px; padding:20px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom:20px; }
+        input { width:100%; padding:10px; margin:5px 0; border:1px solid #cbd5e1; border-radius:6px; box-sizing: border-box; text-align: center; }
         .row { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:6px; }
         .row2 { display:grid; grid-template-columns: 1fr 1fr; gap:6px; }
         
-        /* Public Table - Scrolable on Mobile */
+        /* Table Responsiveness */
         .table-container { overflow-x: auto; background: white; border-radius: 8px; }
-        table { width:100%; border-collapse: collapse; min-width: 600px; }
-        th { background:#e2e8f0; padding:12px; font-size: 12px; text-align: left; }
-        td { padding:12px; border-bottom:1px solid #f1f5f9; font-size: 14px; }
+        table { width:100%; border-collapse: collapse; min-width: 700px; }
+        th { background:#e2e8f0; padding:12px; font-size: 11px; text-transform: uppercase; text-align: center; }
+        td { padding:12px; border-bottom:1px solid #f1f5f9; font-size: 14px; text-align: center; }
+        .team-name { text-align: left; font-weight: 600; width: 250px; }
         
-        /* Status Tags */
-        .won { color: var(--win); font-weight: bold; }
-        .loss { color: var(--loss); font-weight: bold; }
-        .pending { color: #64748b; }
-
-        /* Buttons */
-        .btn { border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold; transition: 0.2s; }
+        .WON { color: var(--win); font-weight: bold; }
+        .LOST { color: var(--loss); font-weight: bold; }
+        .btn { border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold; }
         .btn-main { background:var(--primary); color:white; width:100%; }
         .btn-pub { background:var(--win); color:white; width:100%; margin-top:10px; }
-        .btn-pdf { background:#64748b; color:white; margin-top:10px; }
-        
+        .btn-pdf { background:#64748b; color:white; margin-top:10px; width: 100%; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -56,8 +45,8 @@
 <div class="nav">
     <h1>⚽ OMNI-LOGIC PRO</h1>
     <div style="display:flex; gap:10px;">
-        <input type="date" id="calFilter" onchange="fetchMatches()" style="width:130px; margin:0;">
-        <button id="adminToggle" onclick="toggleAdmin()" style="padding:5px 15px; border-radius:4px;">Admin</button>
+        <input type="date" id="calFilter" onchange="fetchMatches()" style="width:140px; margin:0;">
+        <button id="adminToggle" onclick="toggleAdmin()" style="cursor:pointer; padding: 0 15px;">Admin</button>
     </div>
 </div>
 
@@ -67,39 +56,40 @@
         <div id="admin-zone" class="hidden">
             <div id="auth-gate" class="card">
                 <h3>Admin Login</h3>
-                <input type="email" id="email" placeholder="Email">
-                <input type="password" id="pass" placeholder="Password">
+                <input type="email" id="admEmail" placeholder="Email">
+                <input type="password" id="admPass" placeholder="Password">
                 <button class="btn btn-main" onclick="login()">Sign In</button>
             </div>
 
             <div id="crud-controls" class="hidden">
                 <div class="card">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <h3>New Prediction</h3>
-                        <button onclick="logout()" style="background:none; border:none; color:red; cursor:pointer;">Logout</button>
+                        <h3>Prediction Input</h3>
+                        <button onclick="logout()" style="color:red; background:none; border:none; cursor:pointer;">Logout</button>
                     </div>
+                    
                     <input type="date" id="mDate">
                     <div class="row2"><input id="hName" placeholder="Home Team"><input id="aName" placeholder="Away Team"></div>
                     
-                    <small>Home (6H / 8O)</small>
+                    <label style="font-size:11px; font-weight:bold;">HOME (6H / 8O)</label>
                     <div class="row"><input id="h6w" value="4"><input id="h6d" value="1"><input id="h6l" value="1"></div>
                     <div class="row"><input id="h8w" value="5"><input id="h8d" value="2"><input id="h8l" value="1"></div>
                     <div class="row2"><input id="h6gs" value="12"><input id="h6gc" value="5"></div>
                     <div class="row2"><input id="h8gs" value="16"><input id="h8gc" value="8"></div>
 
-                    <small>Away (6A / 8O)</small>
+                    <label style="font-size:11px; font-weight:bold;">AWAY (6A / 8O)</label>
                     <div class="row"><input id="a6w" value="2"><input id="a6d" value="2"><input id="a6l" value="2"></div>
                     <div class="row"><input id="a8w" value="3"><input id="a8d" value="2"><input id="a8l" value="3"></div>
                     <div class="row2"><input id="a6gs" value="7"><input id="a6gc" value="9"></div>
                     <div class="row2"><input id="a8gs" value="10"><input id="a8gc" value="14"></div>
 
-                    <button class="btn btn-main" onclick="run()">Run Algorithm</button>
+                    <button class="btn btn-main" onclick="run()">Run Logic</button>
                     
-                    <div id="draft-box" class="hidden">
-                        <p id="draft-txt" style="text-align:center; font-weight:bold; margin:10px 0;"></p>
-                        <button class="btn btn-pub" onclick="publish()">Publish Match</button>
+                    <div id="draft-box" class="hidden" style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+                        <div id="draft-res" style="font-size:13px; color:var(--primary);"></div>
+                        <button class="btn btn-pub" onclick="publish()">Publish Prediction</button>
                     </div>
-                    <button class="btn btn-pdf" onclick="exportPDF()">Export PDF (Current View)</button>
+                    <button class="btn btn-pdf" onclick="exportPDF()">Export PDF</button>
                 </div>
             </div>
         </div>
@@ -111,7 +101,7 @@
                         <thead>
                             <tr>
                                 <th>Date</th>
-                                <th>Match</th>
+                                <th class="team-name">Match</th>
                                 <th>1X2</th>
                                 <th>DC</th>
                                 <th>O/U</th>
@@ -129,7 +119,7 @@
 </div>
 
 <script>
-// --- FIREBASE SETUP ---
+// --- FIREBASE CONFIG ---
 const firebaseConfig = {
   apiKey: "AIzaSyBSwffoJXVkS5JhtetWTpxcm-gxHHOSK8s",
   authDomain: "foot-6945e.firebaseapp.com",
@@ -139,14 +129,12 @@ const firebaseConfig = {
   appId: "1:761830387588:web:019dc49c9b5cc0899277d1",
   measurementId: "G-6VGJEJCSVQ"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// --- AUTH & UI ---
 function toggleAdmin() { document.getElementById('admin-zone').classList.toggle('hidden'); }
-function login() { auth.signInWithEmailAndPassword(email.value, pass.value).catch(e => alert(e.message)); }
+function login() { auth.signInWithEmailAndPassword(admEmail.value, admPass.value).catch(e => alert(e.message)); }
 function logout() { auth.signOut(); }
 
 auth.onAuthStateChanged(user => {
@@ -160,8 +148,8 @@ auth.onAuthStateChanged(user => {
     fetchMatches();
 });
 
-// --- ALGORITHM LOGIC (Unaltered) ---
-let currentDraft = null;
+// --- EXACT SCRIPT LOGIC ---
+let draft = null;
 function fact(n){ let r=1; for(let i=1;i<=n;i++) r*=i; return r; }
 function poisson(k,lambda){ return (Math.pow(lambda,k)*Math.exp(-lambda))/fact(k); }
 
@@ -175,10 +163,10 @@ function run(){
         let attack=(x.gs6+x.gs8)/14; let defense=(x.gc6+x.gc8)/14;
         return 1500 + (perf6*200*0.6) + (perf8*200*0.4) + (attack*50) - (defense*40);
     }
-    let hElo=calcElo(h)+50; let aElo=calcElo(a);
-    let hAtt=((h.gs6/6)+(h.gs8/8))/2; let hDef=((h.gc6/6)+(h.gc8/8))/2;
-    let aAtt=((a.gs6/6)+(a.gs8/8))/2; let aDef=((a.gc6/6)+(a.gc8/8))/2;
-    let expH=(hAtt+aDef)/2; let expA=(aAtt+hDef)/2;
+    let homeElo=calcElo(h)+50; let awayElo=calcElo(a);
+    let hAttack=((h.gs6/6)+(h.gs8/8))/2; let hDefense=((h.gc6/6)+(h.gc8/8))/2;
+    let aAttack=((a.gs6/6)+(a.gs8/8))/2; let aDefense=((a.gc6/6)+(a.gc8/8))/2;
+    let expH=(hAttack + aDefense)/2; let expA=(aAttack + hDefense)/2;
 
     let hw=0,dr=0,aw=0;
     for(let i=0;i<=5;i++){ for(let j=0;j<=5;j++){
@@ -186,54 +174,59 @@ function run(){
         if(i>j) hw+=p; else if(i==j) dr+=p; else aw+=p;
     }}
 
-    let diff=hElo-aElo;
+    let diff=homeElo-awayElo;
     let eloH=1/(1+Math.pow(10,-diff/400));
+    let eloA=1-eloH;
     let formH=((h.w6*3+h.d6)+(h.w8*3+h.d8))/42;
     let formA=((a.w6*3+a.d6)+(a.w8*3+a.d8))/42;
+
     let fH=(0.40*hw)+(0.25*eloH)+(0.20*formH);
-    let fA=(0.40*aw)+(0.25*(1-eloH))+(0.20*formA);
+    let fA=(0.40*aw)+(0.25*eloA)+(0.20*formA);
     let fD=dr*0.15;
     let sum=fH+fA+fD; fH/=sum; fA/=sum; fD/=sum;
 
-    let res = (fH>fA && fH>fD)?"1":(fA>fH && fA>fD)?"2":"X";
-    let dc = (fH+fD > 0.65)?"1X":(fA+fD > 0.65)?"X2":"12";
-    let over = 0; for(let i=0;i<=5;i++){ for(let j=0;j<=5;j++){ if(i+j>=3) over+=poisson(i,expH)*poisson(j,expA); }}
+    let res="",dc="";
+    if(fH>fA && fH>fD){ res="1"; dc=fH>0.65?"1 STRONG":"1X"; }
+    else if(fA>fH && fA>fD){ res="2"; dc=fA>0.65?"2 STRONG":"X2"; }
+    else { res="X"; dc="1X or X2"; }
 
-    currentDraft = { tip:res, dc:dc, ou:over>0.55?"O2.5":"U2.5", btts:(expH>0.9&&expA>0.9)?"YES":"NO" };
+    let btts=0; for(let i=1;i<=5;i++){ for(let j=1;j<=5;j++){ btts+=poisson(i,expH)*poisson(j,expA); } }
+    let over=0; for(let i=0;i<=5;i++){ for(let j=0;j<=5;j++){ if(i+j>=3) over+=poisson(i,expH)*poisson(j,expA); } }
+
+    draft = { tip: res, dc: dc, ou: over>0.55?"O2.5":"U2.5", btts: btts>0.55?"YES":"NO" };
     document.getElementById('draft-box').classList.remove('hidden');
-    document.getElementById('draft-txt').innerText = `Analysis Ready: ${res} | ${currentDraft.ou}`;
+    document.getElementById('draft-res').innerHTML = `<b>Result:</b> ${res} | <b>DC:</b> ${dc} | <b>Prob:</b> ${(fH*100).toFixed(1)}%`;
 }
 
-// --- DATABASE OPERATIONS ---
+// --- DB OPS ---
 async function publish() {
     await db.collection("predictions").add({
         date: mDate.value, home: hName.value, away: aName.value,
-        ...currentDraft, status: "PENDING", score: ""
+        ...draft, score: "", status: "PENDING"
     });
-    alert("Match Published!");
-    fetchMatches();
+    alert("Published!"); fetchMatches();
 }
 
 async function updateScore(id, score, tip) {
     if(!score.includes("-")) return;
     let [hS, aS] = score.split("-").map(Number);
-    let result = (hS > aS) ? "1" : (hS === aS) ? "X" : "2";
-    let status = (result === tip) ? "WON" : "LOST";
+    let act = (hS > aS) ? "1" : (hS === aS) ? "X" : "2";
+    let status = (act === tip.charAt(0)) ? "WON" : "LOST"; // Logic check against first char of Tip
     await db.collection("predictions").doc(id).update({ score, status });
     fetchMatches();
 }
 
 async function deleteMatch(id) {
-    if(confirm("Delete prediction?")) { await db.collection("predictions").doc(id).delete(); fetchMatches(); }
+    if(confirm("Delete?")) { await db.collection("predictions").doc(id).delete(); fetchMatches(); }
 }
 
 async function fetchMatches() {
     const list = document.getElementById('match-list');
     const filter = document.getElementById('calFilter').value;
-    let query = db.collection("predictions").orderBy("date", "desc");
-    if(filter) query = query.where("date", "==", filter);
+    let q = db.collection("predictions").orderBy("date", "desc");
+    if(filter) q = q.where("date", "==", filter);
 
-    const snap = await query.get();
+    const snap = await q.get();
     list.innerHTML = "";
     snap.forEach(doc => {
         const m = doc.data();
@@ -241,17 +234,14 @@ async function fetchMatches() {
         list.innerHTML += `
             <tr>
                 <td>${m.date}</td>
-                <td style="font-weight:bold">${m.home} vs ${m.away}</td>
-                <td><span class="pending">${m.tip}</span></td>
+                <td class="team-name">${m.home} vs ${m.away}</td>
+                <td style="font-weight:bold">${m.tip}</td>
                 <td>${m.dc}</td>
                 <td>${m.ou}</td>
                 <td>${m.btts}</td>
-                <td>
-                    ${isAdmin ? 
-                        `<input type="text" value="${m.score}" placeholder="Score" onchange="updateScore('${doc.id}', this.value, '${m.tip}')" style="width:50px; padding:2px;"> 
-                         <button onclick="deleteMatch('${doc.id}')" style="color:red; background:none; border:none; cursor:pointer;">🗑️</button>` : 
-                        `<span class="${m.status.toLowerCase()}">${m.score || 'vs'}</span>`
-                    }
+                <td class="${m.status}">
+                    ${isAdmin ? `<input type="text" value="${m.score}" onchange="updateScore('${doc.id}', this.value, '${m.tip}')" style="width:50px; margin:0;">
+                    <button onclick="deleteMatch('${doc.id}')" style="background:none; border:none; cursor:pointer;">🗑️</button>` : (m.score || 'vs')}
                 </td>
             </tr>`;
     });
@@ -260,9 +250,9 @@ async function fetchMatches() {
 function exportPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    doc.text(`Omni-Logic Predictions Export - ${document.getElementById('calFilter').value || 'All'}`, 14, 15);
-    doc.autoTable({ html: '#match-table', startY: 20, theme: 'grid' });
-    doc.save(`predictions_${new Date().toISOString().slice(0,10)}.pdf`);
+    doc.text(`Omni-Logic Predictions - ${document.getElementById('calFilter').value || 'All Dates'}`, 14, 15);
+    doc.autoTable({ html: '#match-table', startY: 20, theme: 'grid', styles: { fontSize: 8 } });
+    doc.save(`OmniLogic_Export.pdf`);
 }
 </script>
 </body>
